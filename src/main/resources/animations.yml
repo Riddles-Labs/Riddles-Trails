@@ -1,5 +1,5 @@
 # All colors and default particle choices live here, never inside an animation algorithm.
-# Short IDs resolve to nexustrails:<id>. Custom plugins register their own namespace.
+# Short IDs resolve to riddlestrails:<id>. Custom plugins register their own namespace.
 default-animation: comet
 fallback-animation: breathing
 style:

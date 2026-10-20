@@ -1,33 +1,47 @@
-name: NexusTrails
-main: cc.nexusdev.trails.NexusTrailsPlugin
+name: RiddlesTrails
+main: com.riddleslabs.trails.RiddlesTrailsPlugin
 version: ${project.version}
 description: Personal particle trails to saved waypoints and recorded routes.
-api-version: '1.21.11'
+api-version: '${minecraft.api.version}'
 folia-supported: true
-author: NexusDev
+author: Riddles Labs
+depend: [RiddlesLabsCore]
 softdepend: [Citizens, BeautyQuests]
 commands:
-  trailanimation:
+  riddlestrailanimation:
+    aliases: [trailanimation, rta]
     description: List and select configurable trail animations.
-    usage: /trailanimation <list|set|reset> [player] [id]
-    permission: nexustrails.animation.admin
-  questtrail:
+    usage: /riddlestrailanimation <list|set|reset> [player] [id]
+    permission: riddlestrails.animation.admin
+  riddlesquesttrail:
+    aliases: [questtrail, rqt]
     description: Assign private quest guidance to an NPC or location.
-    usage: /questtrail <show|clear|status> <player>
-    permission: nexustrails.quest.admin
-  trail:
+    usage: /riddlesquesttrail <show|clear|status> <player>
+    permission: riddlestrails.quest.admin
+  riddlestrails:
+    aliases: [trail, trails, rt]
     description: Follow a particle trail to a destination.
-    usage: /trail <destination|list|stop|help>
+    usage: /riddlestrails <destination|list|stop|help>
 permissions:
-  nexustrails.animation.admin:
+  riddlestrails.animation.admin:
     description: Select animations for players' ordinary and quest trails.
     default: op
-  nexustrails.quest.admin:
+  riddlestrails.quest.admin:
     description: Assign, clear and inspect other players' quest trails.
     default: op
-  nexustrails.use:
+  riddlestrails.use:
     description: Follow trails and list destinations.
     default: true
-  nexustrails.admin:
+  riddlestrails.admin:
     description: Create, record, delete and reload trails.
     default: op
+    children:
+      riddlestrails.use: true
+  riddlestrails.*:
+    description: All Riddles Trails permissions.
+    default: op
+    children:
+      riddlestrails.use: true
+      riddlestrails.admin: true
+      riddlestrails.quest.admin: true
+      riddlestrails.animation.admin: true

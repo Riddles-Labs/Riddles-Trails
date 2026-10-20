@@ -1,0 +1,17 @@
+{
+  "plugin": "RiddlesTrails",
+  "version": "1.5.1",
+  "project": "F:/Plugins Coding/RiddlesTrails",
+  "artifact": "target/RiddlesTrails-1.5.1.jar",
+  "core_dependency": "RiddlesLabsCore API >=0.6.0,<0.7.0 (compatible with 0.6.1)",
+  "core_project": "F:/Plugins Coding/RiddlesLabCore",
+  "build_command": "mvn -B -ntp -Dmaven.test.skip=true -DskipITs=true clean package",
+  "maven_exit_code": 0,
+  "tests_run": false,
+  "servers_started": false,
+  "production_files_changed": false,
+  "runtime_validation": "NOT_RUN; owner performs actual-server validation",
+  "upgrade_guide": "docs/CORE-ADOPTION.md",
+  "minecraft_api_version": "26.2",
+  "paper_api_dependency": "26.2.build.133-stable"
+}

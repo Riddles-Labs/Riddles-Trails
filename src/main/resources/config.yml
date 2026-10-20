@@ -1,4 +1,4 @@
-# Nexus Trails - Paper/Folia 1.21.11, Java 21.
+# Riddles Trails - Java 25; requires RiddlesLabsCore API 0.5.x.
 # Simple waypoints draw a direct guide. Record a route to follow roads or avoid obstacles.
 render:
   update-interval-ticks: 6
@@ -21,7 +21,7 @@ recording:
   max-step-distance: 8.0
 
 # Optional Paper-only Citizens / BeautyQuests integration.
-# Record routes with /trail record <id>, walk the road toward the NPC, /trail save.
+# Record routes with /riddlestrails record <id>, walk the road toward the NPC, /riddlestrails save.
 # Multiple routes per NPC can cover different approaches. Nearby terrain connects players to the route.
 quest-trails:
   # Total A* node budget per connection attempt (bounded to 96-3072).

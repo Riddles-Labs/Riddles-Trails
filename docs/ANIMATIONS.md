@@ -1,6 +1,6 @@
 # Trail animations
 
-Nexus Trails 1.4.2 gives each of the original 46 effects its own particle shape and adds `walking-ghost`, for 47 effects total. Hearts, stars, chevrons, clock faces, shoe outlines, hourglasses, gears, door leaves and humanoid figures move along the route. Colors, particle type, period, size, geometry scale and effect parameters come from `plugins/NexusTrails/animations.yml`. The built-ins are registered through the same registry used by extensions; custom plugins are not limited to the built-in names or geometries.
+Riddles Trails 1.5.0-SNAPSHOT gives each of the original 46 effects its own particle shape and adds `walking-ghost`, for 47 effects total. Hearts, stars, chevrons, clock faces, shoe outlines, hourglasses, gears, door leaves and humanoid figures move along the route. Colors, particle type, period, size, geometry scale and effect parameters come from `plugins/RiddlesTrails/animations.yml`. The built-ins are registered through the same registry used by extensions; custom plugins are not limited to the built-in names or geometries.
 
 ## Server configuration and commands
 
@@ -42,18 +42,18 @@ patterns:
     palette: ['#B8F2E6', '#A9DEF9']
 ```
 
-The shipped file lists every built-in profile. Profile values inherit from `style`; profiles can override any of those fields. Missing shipped settings and new profiles are added to existing files on startup/reload, preserving configured values and saved player preferences. `fallback-animation` must name a built-in. `default-animation` can name a custom animation once its plugin registers it; the fallback is used while it is unavailable. Reload both configuration files with `/trail reload`. An invalid animation reload reports an error and preserves the previous animation configuration.
+The shipped file lists every built-in profile. Profile values inherit from `style`; profiles can override any of those fields. Missing shipped settings and new profiles are added to existing files on startup/reload, preserving configured values and saved player preferences. `fallback-animation` must name a built-in. `default-animation` can name a custom animation once its plugin registers it; the fallback is used while it is unavailable. Reload both configuration files with `/riddlestrails reload`. An invalid animation reload reports an error and preserves the previous animation configuration.
 
 ```text
 trailanimation list
 trailanimation set <player> clockwork-moth
 trailanimation set <player> walking-ghost
-trailanimation set <player> nexustrails:orbiting-guide
+trailanimation set <player> riddlestrails:orbiting-guide
 trailanimation set <player> myplugin:aurora
 trailanimation reset <player>
 ```
 
-Commands require `nexustrails.animation.admin` (console/operators by default). Use the online player's exact name or UUID. Selection takes effect on the next render update and applies to that player's ordinary and quest trails. Selection does not start a destination by itself. Selections and programmatic style overrides are saved by player UUID in `plugins/NexusTrails/animation-preferences.yml` and survive logout, configuration reload and server restart. Restored quest trails use the saved choice. Only an explicit reset removes a preference; resetting selection does not reset a programmatic style override.
+Commands require `riddlestrails.animation.admin` (console/operators by default). Use the online player's exact name or UUID. Selection takes effect on the next render update and applies to that player's ordinary and quest trails. Selection does not start a destination by itself. Selections and programmatic style overrides are saved by player UUID in `plugins/RiddlesTrails/animation-preferences.yml` and survive logout, configuration reload and server restart. Restored quest trails use the saved choice. Only an explicit reset removes a preference; resetting selection does not reset a programmatic style override.
 
 Changes are saved immediately. A failed save reports an error and keeps the previous preference. Back up `animation-preferences.yml` with your other plugin data; it is managed by the plugin, while `animations.yml` defines effects and defaults. A custom animation whose provider is unavailable temporarily uses the fallback without replacing the saved choice, and resumes when its provider registers again. Frame-local listener overrides are not saved. Choices already discarded by version 1.3.0 must be selected once after upgrading.
 
@@ -96,7 +96,7 @@ patterns:
 
 ## Built-in catalog
 
-All IDs accept the `nexustrails:` prefix. Short IDs below are aliases for that namespace.
+All IDs accept the `riddlestrails:` prefix. Short IDs below are aliases for that namespace.
 
 | ID | Effect |
 | --- | --- |
@@ -152,21 +152,21 @@ The end of the currently visible walking section is the animation's forward dire
 
 ## API selection
 
-Use the `nexustrails` **1.4.2** `api` classifier with Maven `provided` scope, and `depend: [NexusTrails]` (or `softdepend` plus a missing-service check). Do not shade the API or install the API-only JAR as a server plugin. The API includes all animation interfaces and event classes without implementation classes.
+Use the `riddlestrails` **1.5.0-SNAPSHOT** `api` classifier with Maven `provided` scope, and `depend: [RiddlesTrails]` (or `softdepend` plus a missing-service check). Do not shade the API or install the API-only JAR as a server plugin. The API includes all animation interfaces and event classes without implementation classes.
 
 ```java
-import cc.nexusdev.trails.api.animation.TrailAnimationAPI;
-import cc.nexusdev.trails.api.QuestTrailAPI;
+import com.riddleslabs.trails.api.animation.TrailAnimationAPI;
+import com.riddleslabs.trails.api.QuestTrailAPI;
 
 TrailAnimationAPI animations = getServer().getServicesManager().load(TrailAnimationAPI.class);
 QuestTrailAPI quests = getServer().getServicesManager().load(QuestTrailAPI.class);
 if (animations == null) return;
 
-animations.select(player.getUniqueId(), "nexustrails:clockwork-moth");
+animations.select(player.getUniqueId(), "riddlestrails:clockwork-moth");
 if (quests != null) quests.showToNpc(player.getUniqueId(), 11);
 
 // Later, switch an already-running trail:
-animations.select(player.getUniqueId(), "nexustrails:comet");
+animations.select(player.getUniqueId(), "riddlestrails:comet");
 animations.reset(player.getUniqueId());
 ```
 
@@ -177,7 +177,7 @@ For programmatic appearance, pass an immutable `AnimationStyle` to `setStyle(UUI
 ## Listener selection
 
 ```java
-import cc.nexusdev.trails.api.animation.*;
+import com.riddleslabs.trails.api.animation.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -185,7 +185,7 @@ public final class QuestEffects implements Listener {
     @EventHandler
     public void chooseAnimation(TrailAnimationSelectEvent event) {
         if (event.getKind() == TrailKind.QUEST && event.getSource().equals("npc:11")) {
-            event.setAnimationId("nexustrails:echo-doors");
+            event.setAnimationId("riddlestrails:echo-doors");
         }
         // Optional frame-local appearance override:
         // event.setStyle(event.getStyle().withPalette(List.of(Color.AQUA, Color.WHITE)));
@@ -201,7 +201,7 @@ On Folia the event is marked asynchronous and fires on the viewer's owning entit
 ## Register a new animation
 
 ```java
-import cc.nexusdev.trails.api.animation.*;
+import com.riddleslabs.trails.api.animation.*;
 
 TrailAnimationAPI animations = getServer().getServicesManager().load(TrailAnimationAPI.class);
 if (animations == null) return;
@@ -231,7 +231,7 @@ particles.emit(Particle.DUST, frame.point(0.6, 0, 0.2), 1,
 
 The emitter validates particle data types and counts, caps output to the remaining budget, and sends only to the assigned viewer. It is valid only during the render callback and only on that callback's thread. Retaining it or emitting asynchronously throws an exception. Positive counts are required; zero-count directional emission is not exposed. For custom movement, update positions using the frame clock.
 
-Use a unique namespace such as `myplugin:aurora`; `nexustrails:` is reserved. IDs are case-insensitive and underscores normalize to hyphens. Duplicate registrations are rejected. Only the registering plugin may unregister its animation with `unregister(owner, id)`. Registrations are automatically removed when that plugin disables. Render exceptions are isolated to that animation/player state and switch subsequent frames to the fallback, without repeatedly invoking the broken callback. Plugin callbacks must still finish promptly: particle budgets cannot stop arbitrary slow plugin code.
+Use a unique namespace such as `myplugin:aurora`; `riddlestrails:` is reserved. IDs are case-insensitive and underscores normalize to hyphens. Duplicate registrations are rejected. Only the registering plugin may unregister its animation with `unregister(owner, id)`. Registrations are automatically removed when that plugin disables. Render exceptions are isolated to that animation/player state and switch subsequent frames to the fallback, without repeatedly invoking the broken callback. Plugin callbacks must still finish promptly: particle budgets cannot stop arbitrary slow plugin code.
 
 ## Preview and verification
 

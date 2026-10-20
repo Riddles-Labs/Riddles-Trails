@@ -1,68 +1,80 @@
-# Nexus Trails
+# Riddles Trails
 
-Standalone personal particle navigation, extracted from NexusRegionManager's trail feature.
+Personal particle navigation built on **RiddlesLabsCore**. Development release **1.5.0-SNAPSHOT**.
 
-**Target platform:** Paper 1.21.11 or Folia 1.21.11, Java 21+. Standalone trails support both using the player's entity scheduler. The optional quest integration requires **Paper** and is disabled on Folia. Spigot is not supported. No NexusRegionManager, WorldGuard, WorldEdit, zMenu, economy plugin, or database is required.
+**Build target:** Java 25 / Paper API 26.2. Ordinary trails use Core's entity scheduler on Paper and Folia. The optional Citizens/BeautyQuests quest integration remains **Paper-only**. Core API 0.5.x is required; no economy plugin or database is required.
 
-## Install
+## Install and upgrade
 
-1. Put `nexustrails-1.4.2.jar` in the server's `plugins` folder.
-2. Start/restart the server. Settings appear in `plugins/NexusTrails/config.yml`.
-3. As an operator, create a destination using one of the examples below.
+1. Stop the server and keep a backup of the previous plugin JAR and data folder.
+2. Remove the previous Trails JAR. Install `RiddlesLabsCore-0.5.0-SNAPSHOT.jar` and `RiddlesTrails-1.5.0-SNAPSHOT.jar` together.
+3. For an upgrade, copy the previous Trails data into `plugins/RiddlesTrails/`. The files remain `config.yml`, `destinations.yml`, `animations.yml` and `animation-preferences.yml`.
+4. Update permissions to `riddlestrails.*` and any fully qualified built-in animation IDs to `riddlestrails:<effect>`. Short animation IDs still work. Keep third-party animation namespaces unchanged.
+5. Start the server. Core must be enabled before Trails; Trails refuses to start without a compatible Core API.
 
-The particle trail is visible only to the player following it. All 47 effects draw animated shapes: hearts, stars, clocks, shoe outlines, coils, doors and more, including a dark `walking-ghost` humanoid with moving arms and legs. Palettes, particle styles, size and timing are configured in `animations.yml`. Ordinary trails and quest trails share the same animation engine. Plugins can select effects through an API or listener and register entirely new animations. See the [animation guide and full catalog](docs/ANIMATIONS.md).
+No server files are automatically copied or rewritten by this source migration. See [upgrade details](docs/CORE-ADOPTION.md) before replacing an installed version. Do not install the API-only JAR on the server.
 
-Animation selections and API style overrides persist by player UUID in `animation-preferences.yml` across logout, reload and restart. Restored quest trails retain the chosen animation until explicitly changed or reset. After upgrading from 1.3.0, select any previously lost choices once to save them.
+The plugin retains all 47 effects, route geometry and destination/preference file formats. It uses Core's lifecycle, task ownership, commands, listeners, configuration loader, service registry, placeholders, startup banners and FastStats. Particle rendering and quest logic remain in Trails.
 
-Use `/trailanimation set <player> walking-ghost` to select the new ghost. Existing animation IDs and saved choices remain valid; missing shape settings and the ghost's configurable black palette are added to `animations.yml` automatically on upgrade.
+Primary commands are `/riddlestrails`, `/riddlestrailanimation` and `/riddlesquesttrail`. Neutral aliases `/trail`, `/trails`, `/rt`, `/trailanimation`, `/rta`, `/questtrail` and `/rqt` remain available. Permission nodes and built-in animation IDs use only the Riddles name.
 
-Version 1.4.2 reduces animation computation and allocation, indexes long routes for nearest-point queries, and reuses collision shapes within each synchronous search/update. Particle detail, budgets and saved selections are preserved. See [performance measurements and reproduction steps](docs/PERFORMANCE.md); the offline results do not measure live server TPS, network traffic or client FPS.
+Animation settings come from `plugins/RiddlesTrails/animations.yml`. Missing new defaults are applied to a private configuration snapshot without overwriting operator edits. UUID selections and style overrides remain in `animation-preferences.yml`. See the [animation catalog](docs/ANIMATIONS.md).
+
+## Build
+
+Build in `F:/Plugins Coding/RiddlesTrails`, with Core's SDK installed from `F:/Coding/RiddlesLabCore`:
+
+```text
+mvn -B -ntp -Dmaven.test.skip=true -DskipITs=true clean package
+```
+
+The output is `target/RiddlesTrails-1.5.0-SNAPSHOT.jar`. Core dependencies have Maven `provided` scope and are not bundled. The owner performs all testing on their server; this project defaults to skipping tests. No tests, benchmarks or servers were run for this migration.
 
 ## Quick waypoint
 
 Stand at the destination and run:
 
 ```text
-/trail set spawn
+/riddlestrails set spawn
 ```
 
-Walk away and run `/trail spawn`. This makes a direct guide to the waypoint. **It does not calculate a walkable path or avoid walls.** Use a recorded route for roads, stairs, bridges and paths around obstacles.
+Walk away and run `/riddlestrails spawn`. This makes a direct guide to the waypoint. **It does not calculate a walkable path or avoid walls.** Use a recorded route for roads, stairs, bridges and paths around obstacles.
 
 ## Record a route
 
 Stand at the start of a road/path:
 
 ```text
-/trail record market
+/riddlestrails record market
 ```
 
-Walk the route on foot, then run `/trail save` at the destination. Players can now use `/trail market` from the same world. Their trail joins the closest segment and follows the recorded direction to the endpoint. The connection from the player to that segment is a straight line, so players should start near the recorded road. Avoid self-intersecting routes where possible.
+Walk the route on foot, then run `/riddlestrails save` at the destination. Players can now use `/riddlestrails market` from the same world. Their trail joins the closest segment and follows the recorded direction to the endpoint. The connection from the player to that segment is a straight line, so players should start near the recorded road. Avoid self-intersecting routes where possible.
 
-Use `/trail pause` and `/trail resume` for a break. Resume near the last recorded point. Same-world teleports keep recording and save a transition between the departure and destination points. Trails guide to the departure point, then continue on the other side after teleporting; they never draw a walking segment through the teleport gap. Manually paused recordings remain paused. Changing worlds or flying interrupts recording; return to the route before resuming. `/trail cancel` discards only the unsaved recording. Unsaved recordings are discarded on disconnect/restart. Saved destinations survive restart.
+Use `/riddlestrails pause` and `/riddlestrails resume` for a break. Resume near the last recorded point. Same-world teleports keep recording and save a transition between the departure and destination points. Trails guide to the departure point, then continue on the other side after teleporting; they never draw a walking segment through the teleport gap. Manually paused recordings remain paused. Changing worlds or flying interrupts recording; return to the route before resuming. `/riddlestrails cancel` discards only the unsaved recording. Unsaved recordings are discarded on disconnect/restart. Saved destinations survive restart.
 
 ## Commands
 
 | Command | Description | Permission |
 | --- | --- | --- |
-| `/trail <id>` | Follow a destination | `nexustrails.use` |
-| `/trail go <id>` | Explicit destination command | `nexustrails.use` |
-| `/trail list` | List destinations | `nexustrails.use` |
-| `/trail stop` | Stop your active trail | `nexustrails.use` |
-| `/trail help` | Show commands | `nexustrails.use` |
-| `/trail set <id>` | Save your location as a direct waypoint | `nexustrails.admin` |
-| `/trail record <id>` | Start recording a walking route | `nexustrails.admin` |
-| `/trail pause` | Pause recording | `nexustrails.admin` |
-| `/trail resume` | Resume recording near its last point | `nexustrails.admin` |
-| `/trail save` | Save the recording with your location as endpoint | `nexustrails.admin` |
-| `/trail cancel` | Discard the current recording | `nexustrails.admin` |
-| `/trail delete <id> DELETE` | Confirm deletion of a saved destination | `nexustrails.admin` |
-| `/trail reload` | Reload config/destinations and stop active trails | `nexustrails.admin` |
+| `/riddlestrails <id>` | Follow a destination | `riddlestrails.use` |
+| `/riddlestrails go <id>` | Explicit destination command | `riddlestrails.use` |
+| `/riddlestrails list` | List destinations | `riddlestrails.use` |
+| `/riddlestrails stop` | Stop your active trail | `riddlestrails.use` |
+| `/riddlestrails help` | Show commands | `riddlestrails.use` |
+| `/riddlestrails set <id>` | Save your location as a direct waypoint | `riddlestrails.admin` |
+| `/riddlestrails record <id>` | Start recording a walking route | `riddlestrails.admin` |
+| `/riddlestrails pause` | Pause recording | `riddlestrails.admin` |
+| `/riddlestrails resume` | Resume recording near its last point | `riddlestrails.admin` |
+| `/riddlestrails save` | Save the recording with your location as endpoint | `riddlestrails.admin` |
+| `/riddlestrails cancel` | Discard the current recording | `riddlestrails.admin` |
+| `/riddlestrails delete <id> DELETE` | Confirm deletion of a saved destination | `riddlestrails.admin` |
+| `/riddlestrails reload` | Reload config/destinations and stop active trails | `riddlestrails.admin` |
 
-Players have `nexustrails.use` by default. Administrators/operators have `nexustrails.admin` by default. Destination IDs are 1–48 lowercase letters, digits, hyphens or underscores, beginning with a letter/digit. Command names are reserved. Creation does not overwrite existing IDs; delete explicitly before replacing one.
+Players have `riddlestrails.use` by default. Administrators/operators have `riddlestrails.admin` by default. Destination IDs are 1–48 lowercase letters, digits, hyphens or underscores, beginning with a letter/digit. Command names are reserved. Creation does not overwrite existing IDs; delete explicitly before replacing one.
 
 ## Storage and settings
 
-Destinations and route points are saved in `plugins/NexusTrails/destinations.yml`, using atomic file replacement where supported. Example:
+Destinations and route points are saved in `plugins/RiddlesTrails/destinations.yml`, using atomic file replacement where supported. Example:
 
 ```yaml
 destinations:
@@ -74,7 +86,7 @@ destinations:
         z: 0.5
 ```
 
-Edit the file while the server is stopped, or run `/trail reload` after edits. Keep a backup when editing routes manually. Invalid route data fails loading instead of replacing the current in-memory routes.
+Edit the file while the server is stopped, or run `/riddlestrails reload` after edits. Keep a backup when editing routes manually. Invalid route data fails loading instead of replacing the current in-memory routes.
 
 The config controls particle spacing, look-ahead distance, height above recorded feet positions, update rate, particle budget, trail timeout, arrival radius, and recording limits. Defaults allow up to 1,200 particles per player per update every 6 ticks, with a 20-block look-ahead and 180-second timeout. The configurable budget accepts 6–6,000 particles. All 47 built-ins use `animations.yml`'s `style.parameters.detail-multiplier` (default 6) to add contour, curve and model samples, scaling detail down for smaller budgets. Extra detail includes clock markings, gear hubs, moth wing veins, shoe treads and a surfaced ghost head/torso with thicker moving limbs.
 
@@ -92,12 +104,12 @@ Unit tests cover route joining/projection, corner following, duplicate points, i
 
 ## Quest guidance: Citizens and BeautyQuests
 
-Nexus Trails exposes private quest trails through Java and console commands. Nothing is tied to a particular server, NPC name or quest chain. Install compatible Citizens and BeautyQuests builds on Paper to use both integrations. Fixed-location guidance does not require either plugin. Existing configs can add the `quest-trails` section shown below; missing settings use defaults.
+Riddles Trails exposes private quest trails through Java and console commands. Nothing is tied to a particular server, NPC name or quest chain. Install compatible Citizens and BeautyQuests builds on Paper to use both integrations. Fixed-location guidance does not require either plugin. Existing configs can add the `quest-trails` section shown below; missing settings use defaults.
 
 ### Configure roads first
 
-1. At the start of the road, run `/trail record village-to-guide`.
-2. Walk the intended route around walls and buildings to the NPC, then `/trail save`.
+1. At the start of the road, run `/riddlestrails record village-to-guide`.
+2. Walk the intended route around walls and buildings to the NPC, then `/riddlestrails save`.
 3. Map the Citizens NPC ID to that recorded route in `config.yml`:
 
 ```yaml
@@ -111,7 +123,7 @@ quest-trails:
   restore-rules: []
 ```
 
-Record every referenced route, then run `/trail reload`. These NPC IDs and route names are examples; replace them with your own. Multiple routes per NPC allow different starting areas. The nearest route entrances are tried first, preferring a complete walkable connection. Routes are directional. A single `/trail set` waypoint can also be mapped; guidance then uses the bounded local walking search to approach it.
+Record every referenced route, then run `/riddlestrails reload`. These NPC IDs and route names are examples; replace them with your own. Multiple routes per NPC allow different starting areas. The nearest route entrances are tried first, preferring a complete walkable connection. Routes are directional. A single `/riddlestrails set` waypoint can also be mapped; guidance then uses the bounded local walking search to approach it.
 
 Players can receive guidance away from the recorded road. A show command/API call schedules its first render for the next server tick. A bounded walking search connects the player to a recorded section using loaded terrain, including detours around walls. The old `join-radius` setting is ignored. The route endpoint must still be within `target-radius` (0.5–8 blocks) of the destination. An NPC's live position is refreshed each render update; if it leaves that endpoint radius, configure an appropriate route or move it back.
 
@@ -121,11 +133,11 @@ Stair and slab samples are lifted to nearby step surfaces (up to approximately o
 
 ### Elevators and existing recordings
 
-Record a route normally, use the elevator, then keep walking and save. Nexus Trails captures the same-world Bukkit teleport as an explicit transition, stored as destination point indices in `destinations.<id>.teleports`. Quest guidance marks the entrance and asks the player to use the elevator/teleport. It recalculates from the exit on the next tick. Standalone trails also stop drawing at the entrance and rejoin after teleporting.
+Record a route normally, use the elevator, then keep walking and save. Riddles Trails captures the same-world Bukkit teleport as an explicit transition, stored as destination point indices in `destinations.<id>.teleports`. Quest guidance marks the entrance and asks the player to use the elevator/teleport. It recalculates from the exit on the next tick. Standalone trails also stop drawing at the entrance and rejoin after teleporting.
 
-[Simple Elevators](https://www.spigotmc.org/resources/simple-elevators-1-8-26-2.44462/) uses Space to go up and Shift to go down. Nexus Trails relies on the resulting normal teleport event, so no Simple Elevators dependency or special config is required. Live compatibility with the installed elevator build should still be checked on a server.
+[Simple Elevators](https://www.spigotmc.org/resources/simple-elevators-1-8-26-2.44462/) uses Space to go up and Shift to go down. Riddles Trails relies on the resulting normal teleport event, so no Simple Elevators dependency or special config is required. Live compatibility with the installed elevator build should still be checked on a server.
 
-For older recordings, near-vertical gaps over 1.25 blocks with less than one block of horizontal displacement are treated as elevator transitions automatically. Other old teleport gaps need to be rerecorded to capture explicit transition metadata. This heuristic can also classify near-vertical ladder/drop segments as transitions; record a walking alternative when appropriate. Existing configs work without changes: `connector-max-nodes` defaults to 768 and `join-radius` no longer restricts guidance. Replace the older Nexus Trails JAR with 1.4.2 and restart; the new `animations.yml` is created automatically.
+For older recordings, near-vertical gaps over 1.25 blocks with less than one block of horizontal displacement are treated as elevator transitions automatically. Other old teleport gaps need to be rerecorded to capture explicit transition metadata. This heuristic can also classify near-vertical ladder/drop segments as transitions; record a walking alternative when appropriate. Existing configs work without changes: `connector-max-nodes` defaults to 768 and `join-radius` no longer restricts guidance. Replace the older Riddles Trails JAR with 1.4.2 and restart; the new `animations.yml` is created automatically.
 
 ### Console commands
 
@@ -138,7 +150,7 @@ questtrail clear <player>
 questtrail status <player>
 ```
 
-Use an online player's exact name or UUID. Commands require `nexustrails.quest.admin` (operators and console by default). Normal players do not need that permission to receive guidance. Fixed locations select from `location-routes` using the same endpoint matching and walking connections.
+Use an online player's exact name or UUID. Commands require `riddlestrails.quest.admin` (operators and console by default). Normal players do not need that permission to receive guidance. Fixed locations select from `location-routes` using the same endpoint matching and walking connections.
 
 For BeautyQuests, choose **console** execution and use its player placeholder:
 
@@ -169,28 +181,28 @@ quest-trails:
 
 The first matching rule wins: `after-quest` must be completed and `until-quest` must be neither active nor completed. Put later steps first. Replace all example IDs with your server's IDs. This handles guidance **between quests**; it does not infer arbitrary in-quest stages or party progress. For other quest systems or stage-specific logic, use the Java API when that system finishes loading the player's progress.
 
-Restoration waits one second and retries unavailable progress for up to ten attempts. A newer show/clear command always takes precedence over pending restoration. Missing or incompatible BeautyQuests APIs leave guidance unassigned and produce a console warning. Empty rules disable restoration. Quest state is read only; Nexus Trails does not edit BeautyQuests data or persist old trail assignments. Configure both the live command actions and the login rules.
+Restoration waits one second and retries unavailable progress for up to ten attempts. A newer show/clear command always takes precedence over pending restoration. Missing or incompatible BeautyQuests APIs leave guidance unassigned and produce a console warning. Empty rules disable restoration. Quest state is read only; Riddles Trails does not edit BeautyQuests data or persist old trail assignments. Configure both the live command actions and the login rules.
 
-The bridge targets the [BeautyQuests 2.1.0 public API](https://github.com/SkytAsul/BeautyQuests/tree/2.1.0/api/src/main/java/fr/skytasul/quests/api), with a fallback for the 1.0.x account API. Reflection keeps both plugins optional. API shape compatibility and mocked lifecycle behavior are tested; installation-specific live compatibility still needs a server check.
+The bridge targets the [BeautyQuests 2.1.0 public API](https://github.com/SkytAsul/BeautyQuests/tree/2.1.0/api/src/main/java/fr/skytasul/quests/api), with a fallback for the 1.0.x account API. Reflection keeps both plugins optional. This Core adaptation has been compiled only; the owner handles runtime compatibility on their server.
 
 ### Java API
 
-The `api` classifier JAR contains only the public interface. Run `mvn install` locally to make it available as a Maven dependency (it is not published to a public Maven repository):
+The `api` classifier JAR contains only the public interface. Run `mvn -Dmaven.test.skip=true -DskipITs=true install` locally to make it available as a Maven dependency (it is not published to a public Maven repository):
 
 ```xml
 <dependency>
-  <groupId>cc.nexusdev</groupId>
-  <artifactId>nexustrails</artifactId>
-  <version>1.4.2</version>
+  <groupId>com.riddleslabs</groupId>
+  <artifactId>riddlestrails</artifactId>
+  <version>1.5.0-SNAPSHOT</version>
   <classifier>api</classifier>
   <scope>provided</scope>
 </dependency>
 ```
 
-Add `depend: [NexusTrails]` to your plugin's `plugin.yml` (or `softdepend` with a missing-service check). Do not shade the interface into your plugin and do not install the API-only JAR on the server. Obtain the service during `onEnable`:
+Add `depend: [RiddlesTrails]` to your plugin's `plugin.yml` (or `softdepend` with a missing-service check). Do not shade the interface into your plugin and do not install the API-only JAR on the server. Obtain the service during `onEnable`:
 
 ```java
-import cc.nexusdev.trails.api.QuestTrailAPI;
+import com.riddleslabs.trails.api.QuestTrailAPI;
 
 QuestTrailAPI trails = getServer().getServicesManager().load(QuestTrailAPI.class);
 if (trails == null) {
@@ -206,10 +218,8 @@ trails.clear(player.getUniqueId());
 
 One quest assignment exists per player; each show call replaces it. Calls made off the Paper server thread are queued, so `hasTrail` may not reflect a queued mutation immediately. Locations are copied and must contain finite coordinates and a world. Negative NPC IDs are rejected. Offline players are not assigned guidance; restore it after login. Using an API instance after plugin shutdown throws `IllegalStateException` for mutations.
 
-`hasTrail` means an assignment exists, including when paused for missing/despawned NPCs, another world, a missing/blocked route, death or arrival. At arrival particles stop; the assignment remains until clear/disconnect, allowing a moving NPC to be followed again. Quest guidance does not use the ordinary trail timeout. Ordinary `/trail` sessions are independent; `questtrail clear` only clears quest guidance. Already emitted particles expire naturally; most particle lifetimes are client-controlled, while `TRAIL` uses the duration in `animations.yml`.
+`hasTrail` means an assignment exists, including when paused for missing/despawned NPCs, another world, a missing/blocked route, death or arrival. At arrival particles stop; the assignment remains until clear/disconnect, allowing a moving NPC to be followed again. Quest guidance does not use the ordinary trail timeout. Ordinary `/riddlestrails` sessions are independent; `questtrail clear` only clears quest guidance. Already emitted particles expire naturally; most particle lifetimes are client-controlled, while `TRAIL` uses the duration in `animations.yml`.
 
-### Verification before deployment
+### Build status
 
-`mvn clean verify` builds both the server JAR and API JAR. Tests cover off-route guidance on the next tick, wall detours, distant partial connections, step surfaces, visible prefixes at obstructions, elevator entrances/exits, teleport persistence and legacy recordings, route corners and moving endpoints, collision coordinates/low ceilings/fences, assignment replacement, missing NPC/world recovery, unloaded chunks, console permissions, disconnect/shutdown cleanup, and restoration races. On a test Paper server, verify particle appearance, stairs, elevator movement, Citizens movement/despawn, BeautyQuests console actions and login restoration using real quest IDs before deploying to players.
-
-Animation tests exercise all 47 effects across complete cycles and verify geometry beyond the centerline, distinct traces, configurable palettes, plugin ownership, private emissions, budgets, listener overrides, failure isolation, persistence and configuration upgrades. The walking ghost is checked for forward movement, changing leg poses and density fading. They generate `target/animation-preview.html` (playable route and close-up views), `target/animation-atlas.png` (whole routes) and `target/animation-shapes.png` (shape details). These are emitter simulations; Minecraft textures and particle lifetime still need in-game visual verification.
+This migration is compiled and packaged with all tests skipped. No test server, benchmark, simulation or production-server action was run. The owner performs all testing. Historical fixture sources do not establish behavior of the new Core integration.

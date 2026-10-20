@@ -1,4 +1,4 @@
-# Performance work in 1.4.2
+# Historical performance work in 1.4.2
 
 This update keeps the 1,200-particle default, all 47 effects, colors, animation timing and saved player preferences. It reduces work needed to construct the same particle geometry and validate walking routes.
 
@@ -26,14 +26,6 @@ These are offline geometry benchmarks, not live Minecraft TPS/FPS measurements. 
 
 The corridor regression workload (101 samples across a 20-block flat route) verifies over 75% fewer block queries, then checks new obstacles and unloaded chunks with a fresh snapshot. Stairs, fences, low ceilings, wall detours and teleport sections remain covered by the existing tests.
 
-## Reproduction and regression checks
+## Current build policy
 
-```powershell
-mvn test "-Dtest=AnimationPerformanceTest" "-Dnexustrails.benchmark=true" "-DargLine=-XX:StartFlightRecording=filename=target/performance.jfr,settings=profile,dumponexit=true"
-```
-
-Outputs: `target/performance-summary.txt`, `target/performance-traces.txt`, and the requested JFR recording. The timing benchmark is opt-in and has no timing assertion in the normal test suite; machine load and JVM warm-up affect timings.
-
-`AnimationGeometryRegressionTest` checks a captured 1.4.1 reference for every effect over 40 phases: particle counts and ordered positions, intensity and palette position rounded to 1e-6. Other tests compare indexed progress to an exhaustive search on folded/duplicate routes, retain collision-change detection, and verify private budgeted emissions, listener overrides, saved preferences and teleport behavior.
-
-Use `mvn verify` to run the normal suite and build the plugin/API JARs. Live Paper/Folia testing and server profiling are still needed to quantify end-to-end improvements.
+The measurements above are historical results from the earlier 1.4.2 work; they do not establish performance of this Core adaptation. The owner performs all testing on their server. No tests or benchmarks are run as part of this migration, and Maven defaults to skipping them.
