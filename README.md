@@ -1,15 +1,17 @@
 # Riddles Trails
 
-**1.6.3 requires Core 0.6.10.** Shared notification parsing, file relocation, file coordination and numeric parsers now live in Core. Existing settings and data formats stay intact.
+**1.6.4 requires Core 0.6.13.** Trails now reports 26 aggregate metrics and optional scrubbed errors through Core. Existing settings and data formats stay intact.
 
-Personal particle navigation built on **RiddlesLabsCore**. Release **1.6.3**, packaged as a native Paper plugin with Folia support.
+See [FastStats setup and metric definitions](docs/FASTSTATS.md) for the two Trails dashboards and error-reporting switch.
 
-**Build target:** Java 25 / Paper API 26.2. Ordinary trails use Core's entity scheduler on Paper and Folia. The optional Citizens/BeautyQuests quest integration remains **Paper-only**. Core API >=0.6.10,<0.7.0 is required; no economy plugin or database is required.
+Personal particle navigation built on **RiddlesLabsCore**. Release **1.6.4**, packaged as a native Paper plugin with Folia support.
+
+**Build target:** Java 25 / Paper API 26.2. Ordinary trails use Core's entity scheduler on Paper and Folia. The optional Citizens/BeautyQuests quest integration remains **Paper-only**. Core API >=0.6.13,<0.7.0 is required; no economy plugin or database is required.
 
 ## Install and upgrade
 
 1. Stop the server and keep a backup of the previous plugin JAR and data folder.
-2. Remove the previous Trails JAR. Install `RiddlesLabsCore-0.6.10.jar` and `RiddlesTrails-1.6.3.jar` together.
+2. Remove the previous Trails JAR. Install `RiddlesLabsCore-0.6.13.jar` and `RiddlesTrails-1.6.4.jar` together.
 3. For an upgrade, copy the previous Trails data into `plugins/RiddlesTrails/`. The files remain `config.yml`, `destinations.yml`, `animations.yml` and `animation-preferences.yml`.
 4. Update permissions to `riddlestrails.*` and any fully qualified built-in animation IDs to `riddlestrails:<effect>`. Short animation IDs still work. Keep third-party animation namespaces unchanged.
 5. Start the server. Core must be enabled before Trails; Trails refuses to start without a compatible Core API.
@@ -32,7 +34,7 @@ Build in `F:/Plugins Coding/RiddlesTrails`, with Core's SDK installed from `F:/P
 mvn -B -ntp -Dmaven.test.skip=true -DskipITs=true clean package
 ```
 
-The output is `target/RiddlesTrails-1.6.3.jar`. Core dependencies have Maven `provided` scope and are not bundled. The owner performs all testing on their server; this project defaults to skipping tests. No tests, benchmarks or servers were run for this migration.
+The output is `target/RiddlesTrails-1.6.4.jar`. Core dependencies have Maven `provided` scope and are not bundled. The owner performs all testing on their server; this project defaults to skipping tests. No tests, benchmarks or servers were run for this migration.
 
 ## Quick waypoint
 

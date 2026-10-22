@@ -86,6 +86,8 @@ public final class QuestTrailService implements QuestTrailAPI, Listener {
         else scheduler.global(() -> { if (!closed) work.run(); });
     }
 
+    public int activeCount() { return sessions.size(); }
+
     private void tick() {
         TrailSettings render = settings.get();
         for (Map.Entry<UUID, Session> entry : sessions.entrySet()) {
@@ -99,7 +101,7 @@ public final class QuestTrailService implements QuestTrailAPI, Listener {
             try { render(player, session, render); }
             catch (ReflectiveOperationException | IllegalStateException ex) {
                 notice(player, session, "quest.notice-npc-unavailable");
-                if (!session.warned) { plugin.getLogger().warning("Quest trail target unavailable: " + ex.getMessage()); session.warned = true; }
+                if (!session.warned) { messages.observeFailure(TrailMetrics.Counter.QUEST_FAILURES, ex); plugin.getLogger().warning("Quest trail target unavailable: " + ex.getMessage()); session.warned = true; }
             }
         }
     }
@@ -230,6 +232,7 @@ public final class QuestTrailService implements QuestTrailAPI, Listener {
                 if (attempt < 9) restoreLater(id, token, attempt + 1);
                 else {
                     restores.remove(id);
+                    messages.observeFailure(TrailMetrics.Counter.QUEST_FAILURES, ex);
                     plugin.getLogger().warning("Could not restore quest guidance for " + player.getName() + ": " + ex.getMessage());
                 }
             }

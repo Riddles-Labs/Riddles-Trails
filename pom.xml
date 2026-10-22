@@ -3,14 +3,14 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.riddleslabs</groupId>
   <artifactId>riddlestrails</artifactId>
-  <version>1.6.3</version>
+  <version>1.6.4</version>
   <name>Riddles Trails</name>
   <properties>
     <maven.compiler.release>25</maven.compiler.release>
     <maven.test.skip>true</maven.test.skip>
     <minecraft.api.version>26.2</minecraft.api.version>
     <paper.api.version>26.2.build.133-stable</paper.api.version>
-    <riddleslabs.core.version>0.6.10</riddleslabs.core.version>
+    <riddleslabs.core.version>0.6.13</riddleslabs.core.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <repositories><repository><id>papermc</id><url>https://repo.papermc.io/repository/maven-public/</url></repository></repositories>

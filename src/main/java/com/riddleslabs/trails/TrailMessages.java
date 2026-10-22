@@ -30,8 +30,15 @@ public final class TrailMessages implements TabExecutor {
             if (!yaml.isConfigurationSection("messages." + path)) keys.add(path);
         notifications = new TrailNotifications(plugin, module, keys);
         try { reloadNotifications(); }
-        catch (Exception failure) { plugin.getLogger().warning("Invalid notifications.yml; using chat: " + failure.getMessage()); }
+        catch (Exception failure) { observeFailure(TrailMetrics.Counter.NOTIFICATION_FAILURES, failure); plugin.getLogger().warning("Invalid notifications.yml; using chat: " + failure.getMessage()); }
     }
+    public void count(TrailMetrics.Counter counter) {
+        if (plugin instanceof RiddlesTrailsPlugin trails && trails.metrics() != null) trails.metrics().count(counter);
+    }
+    public void report(TrailMetrics.Counter counter, Throwable failure) {
+        if (plugin instanceof RiddlesTrailsPlugin trails && trails.metrics() != null) trails.metrics().report(counter, failure);
+    }
+    public void observeFailure(TrailMetrics.Counter counter, Throwable failure) { count(counter); report(counter, failure); }
     public void send(CommandSender sender, String key, Object... pairs) {
         if (pairs.length % 2 != 0) throw new IllegalArgumentException("Expected variable/value pairs");
         var values = new LinkedHashMap<String, Object>();
@@ -52,6 +59,7 @@ public final class TrailMessages implements TabExecutor {
         }
     }
     private void notificationFailure(Throwable failure) {
+        observeFailure(TrailMetrics.Counter.NOTIFICATION_FAILURES, failure);
         long now=System.nanoTime(),next=nextWarning.get();
         if(now>=next && nextWarning.compareAndSet(next,now+java.time.Duration.ofMinutes(1).toNanos()))
             plugin.getLogger().warning("Trail notification unavailable: "+failure.getClass().getSimpleName());
@@ -60,10 +68,13 @@ public final class TrailMessages implements TabExecutor {
         after(sender,saved,success,()->{});
     }
     public void after(CommandSender sender, java.util.concurrent.CompletionStage<?> saved, Runnable success, Runnable failed) {
-        saved.whenComplete((ignored,failure)->reply(sender,()->{
-            if (failure == null) success.run();
-            else { failed.run(); plugin.getLogger().warning("Trail save failed: "+failure.getMessage()); send(sender,"errors.failed"); }
-        }));
+        saved.whenComplete((ignored,failure)->{
+            if (failure != null) report(TrailMetrics.Counter.FILE_FAILURES, failure);
+            reply(sender, () -> {
+                if (failure == null) success.run();
+                else { failed.run(); plugin.getLogger().warning("Trail save failed: "+failure.getMessage()); send(sender,"errors.failed"); }
+            });
+        });
     }
     public String noticeIdentity(Player player, String key, Object... pairs) {
         return key + ":" + languages.report().revision() + ":" + languages.locale(player).toLanguageTag() + ":" + Arrays.toString(pairs);
@@ -102,13 +113,14 @@ public final class TrailMessages implements TabExecutor {
             send(sender, "language.reloading");
             try {
                 languages.reload().whenComplete((report, failure) -> {
+                    if (failure != null) observeFailure(TrailMetrics.Counter.RELOAD_FAILURES, failure);
                     if (failure != null) plugin.getLogger().warning("Language reload rejected; previous catalogs retained: " + failure.getMessage());
                     reply(sender, () -> {
                         if (failure == null) send(sender, "language.reloaded", "count", report.fallbackKeys().size(), "keys", report.keys());
                         else send(sender, "language.failed");
                     });
                 });
-            } catch (RuntimeException rejected) { send(sender, "language.failed"); }
+            } catch (RuntimeException rejected) { observeFailure(TrailMetrics.Counter.RELOAD_FAILURES, rejected); send(sender, "language.failed"); }
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("status")) {

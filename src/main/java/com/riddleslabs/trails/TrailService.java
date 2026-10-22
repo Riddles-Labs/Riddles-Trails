@@ -36,10 +36,11 @@ public final class TrailService {
         try {
             session.task = scheduler.entityRepeating(player, 1L, settings.interval(), () -> {
                 try { session.tick(); }
-                catch (RuntimeException | LinkageError failure) { session.retired(); throw failure; }
+                catch (RuntimeException | LinkageError failure) { messages.observeFailure(TrailMetrics.Counter.TRAIL_FAILURES, failure); session.retired(); throw failure; }
             }, session::retired);
             if (session.task.isDone() || sessions.get(player.getUniqueId()) != session) { session.task.cancel(); session.retired(); return; }
         } catch (RuntimeException failure) { session.retired(); throw failure; }
+        messages.count(TrailMetrics.Counter.TRAILS_STARTED);
         messages.send(player, "trail.follow", "id", destination.id());
     }
 
@@ -76,6 +77,8 @@ public final class TrailService {
         void retired() { if(sessions.remove(player.getUniqueId(), this)) TrailParticles.forget(player.getUniqueId(),TrailKind.ORDINARY); }
         void finish(String message) {
             if (sessions.remove(player.getUniqueId(), this)) {
+                if ("trail.arrived".equals(message)) messages.count(TrailMetrics.Counter.TRAILS_ARRIVED);
+                if ("trail.timeout".equals(message)) messages.count(TrailMetrics.Counter.TRAILS_TIMED_OUT);
                 cancel();
                 TrailParticles.forget(player.getUniqueId(),TrailKind.ORDINARY);
                 if (message != null && player.isOnline()) messages.send(player, message, "id", destination.id());

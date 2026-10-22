@@ -11,14 +11,13 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import java.util.*;
-import java.time.Duration;
 import com.riddleslabs.api.config.ReloadableConfiguration;
 import com.riddleslabs.api.health.HealthStatus;
 import com.riddleslabs.api.module.ModuleDescriptor;
 import com.riddleslabs.api.service.ServiceKey;
 import com.riddleslabs.api.startup.StartupRow;
 import com.riddleslabs.api.startup.StartupTone;
-import com.riddleslabs.api.telemetry.TelemetrySession;
+
 import com.riddleslabs.paper.api.PaperCore;
 import com.riddleslabs.paper.api.PaperModule;
 import com.riddleslabs.paper.api.command.CommandRoute;
@@ -43,6 +42,8 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
     private volatile TrailSettings settings;
     private PaperModule module;
     private TrailMessages messages;
+    private TrailMetrics metrics;
+    public TrailMetrics metrics() { return metrics; }
     private ReloadableConfiguration<TrailConfiguration> configuration;
     private final java.util.concurrent.atomic.AtomicBoolean reloading = new java.util.concurrent.atomic.AtomicBoolean();
     private record TrailConfiguration(TrailSettings trails, QuestTrailService.Config quests) {}
@@ -58,10 +59,13 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
         try {
             PaperModule owned = core.register(this, ModuleDescriptor.builder("riddlestrails")
                     .displayName("Riddles Trails").version(getPluginMeta().getVersion())
-                    .requiredApi("0.6.10", "0.7.0").build());
+                    .requiredApi("0.6.13", "0.7.0").build());
             module = owned;
+            metrics = new TrailMetrics(owned);
+            metrics.start();
             folia = core.platform().folia();
             persistence = owned.fileCoordinator("trail-persistence",256,(path,ready) -> {
+                if (!ready) metrics.count(TrailMetrics.Counter.FILE_FAILURES);
                 if(owned.isOpen()) owned.facilities().health().update(path.startsWith("destinations") ? "routes" : "preferences",
                         ready ? HealthStatus.HEALTHY : HealthStatus.DEGRADED,ready ? "FILE_READY" : "FILE_OPERATION_FAILED");
             });
@@ -76,7 +80,7 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
             settings = configuration.snapshot().value().trails();
             store = new RouteStore(persistence);
             persistence.blocking(() -> { store.load(); return null; });
-            animations = new AnimationEngine(this, owned.configurations(), persistence);
+            animations = new AnimationEngine(this, owned.configurations(), persistence, metrics);
             owned.own(animations::shutdown);
             TrailParticles.initialize(animations);
             owned.own(() -> TrailParticles.initialize(null));
@@ -102,11 +106,22 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
             owned.facilities().health().update("quests", questTrails == null ? HealthStatus.DEGRADED : HealthStatus.HEALTHY,
                     questTrails == null ? "PAPER_ONLY" : "AVAILABLE");
             owned.facilities().health().update("runtime", HealthStatus.HEALTHY, "READY");
-            TelemetrySession telemetry = owned.telemetry(Set.of("destinations", "active_trails", "animations", "recordings"));
-            owned.scheduler().asyncRepeating(Duration.ofSeconds(30), Duration.ofSeconds(30), () ->
-                    telemetry.publish(Map.of("destinations", (double) store.all().size(),
-                            "active_trails", (double) trails.activeCount(), "animations", (double) animations.animations().size(),
-                            "recordings", (double) recordings.size())));
+            metrics.ready(() -> {
+                var routes = store.all();
+                var values = new LinkedHashMap<String, Double>();
+                values.put("destinations", (double) routes.size());
+                values.put("route_points", (double) routes.values().stream().mapToLong(r -> r.points().size()).sum());
+                values.put("teleport_segments", (double) routes.values().stream().mapToLong(r -> r.teleports().size()).sum());
+                values.put("active_trails", (double) trails.activeCount());
+                values.put("animations", (double) animations.animations().size());
+                values.put("custom_animations", (double) animations.customCount());
+                values.put("recordings", (double) recordings.size());
+                values.put("languages", (double) messages.localeCount());
+                values.put("quest_available", questTrails == null ? 0d : 1d);
+                values.put("active_quest_trails", questTrails == null ? 0d : (double) questTrails.activeCount());
+                return values;
+            });
+            getLogger().info("FastStats Trails: " + metrics.status() + " | 26 aggregate metrics");
             owned.markReady();
             owned.startupBanner(List.of("R I D D L E S   L A B S", "T R A I L S"), List.of(
                     new StartupRow("Core API", core.apiVersion().toString(), StartupTone.INFO),
@@ -115,8 +130,9 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
                     new StartupRow("Destinations", Integer.toString(store.all().size()), StartupTone.INFO),
                     new StartupRow("Animations", Integer.toString(animations.animations().size()), StartupTone.INFO),
                     new StartupRow("Quest guidance", questTrails == null ? "Paper only" : "READY", StartupTone.INFO),
-                    new StartupRow("FastStats", telemetry.status().name(), StartupTone.INFO)));
+                    new StartupRow("FastStats", metrics.status(), StartupTone.INFO)));
         } catch (Exception | LinkageError failure) {
+            if (metrics != null) metrics.failure(TrailMetrics.Counter.STARTUP_FAILURES, failure);
             getLogger().severe("Could not enable Riddles Trails: " + failure.getMessage());
             if (module != null) module.close();
             getServer().getPluginManager().disablePlugin(this);
@@ -182,6 +198,7 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
                 animations.reload();
                 return configuration.reload().value().trails();
             }).whenComplete((loaded, failure) -> {
+                if (failure != null) metrics.failure(TrailMetrics.Counter.RELOAD_FAILURES, failure);
                 if (!owned.isOpen()) { reloading.set(false); return; }
                 try {
                     // Apply shared state even if the requesting player disconnected during file I/O.
@@ -200,7 +217,7 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
                     });
                 } catch (IllegalStateException closed) { reloading.set(false); }
             });
-        } catch (RuntimeException rejected) { reloading.set(false); throw rejected; }
+        } catch (RuntimeException rejected) { reloading.set(false); metrics.failure(TrailMetrics.Counter.RELOAD_FAILURES, rejected); throw rejected; }
     }
 
     private void reply(PaperModule owned, CommandSender sender, String message) {
@@ -303,6 +320,7 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
                 }
             }
         } catch (Exception ex) {
+            metrics.failure(TrailMetrics.Counter.COMMAND_FAILURES, ex);
             getLogger().warning("Trail command failed: " + ex.getMessage());
             messages.send(sender, "errors.failed");
         }

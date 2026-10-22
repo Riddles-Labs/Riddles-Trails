@@ -34,6 +34,7 @@ public final class AnimationEngine implements TrailAnimationAPI, Listener {
         }
     }
     private final JavaPlugin plugin;
+    private final com.riddleslabs.trails.TrailMetrics metrics;
     private final Map<String,Registration> registry=new ConcurrentHashMap<>();
     private final AnimationPreferences preferences;
     private final com.riddleslabs.api.files.FileCoordinator persistence;
@@ -43,7 +44,11 @@ public final class AnimationEngine implements TrailAnimationAPI, Listener {
     private volatile boolean closed;
 
     public AnimationEngine(JavaPlugin plugin, YamlConfigurations configurations, com.riddleslabs.api.files.FileCoordinator persistence) {
+        this(plugin, configurations, persistence, null);
+    }
+    public AnimationEngine(JavaPlugin plugin, YamlConfigurations configurations, com.riddleslabs.api.files.FileCoordinator persistence, com.riddleslabs.trails.TrailMetrics metrics) {
         this.plugin=plugin;
+        this.metrics=metrics;
         this.persistence=persistence;
         preferences=persistence.blocking(() -> new AnimationPreferences(persistence));
         BuiltInAnimations.all().forEach((id,animation)->registry.put(id,new Registration(plugin,animation)));
@@ -95,6 +100,7 @@ public final class AnimationEngine implements TrailAnimationAPI, Listener {
         if(removed) states.entrySet().removeIf(e->e.getValue().id.equals(id));
         return removed;
     }
+    public long customCount() { return registry.values().stream().filter(r -> r.owner != plugin).count(); }
     @Override public Set<String> animations() { return Collections.unmodifiableSet(new TreeSet<>(registry.keySet())); }
     @Override public void select(UUID playerId,String name) {
         open();String id=id(name);
@@ -154,6 +160,7 @@ public final class AnimationEngine implements TrailAnimationAPI, Listener {
         try(ViewerParticleSink sink=new ViewerParticleSink(player,style,budget,(long)(elapsed*20)^frame.seed())) {
             registration.animation.render(frame,sink);
         } catch(RuntimeException|LinkageError ex) {
+            if (!state.failed && metrics != null) metrics.failure(com.riddleslabs.trails.TrailMetrics.Counter.ANIMATION_FAILURES, ex);
             if(!state.failed) plugin.getLogger().warning("Animation "+selected+" failed; using fallback: "+ex.getMessage());
             state.failed=true;state.data.clear();
         }
