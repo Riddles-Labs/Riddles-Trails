@@ -1,6 +1,6 @@
 # Native Paper and Folia packaging
 
-Current paired builds: Core 0.6.7, Riddles Region Manager 1.1.15e, Riddles Trails 1.6.1.
+Current Trails build: 1.6.2 with Core 0.6.9. The historical migration below introduced native Paper command registration.
 Replace Core and each installed consumer JAR while the server is stopped. Keep
 existing configuration, language catalogs, data, rental state and pairing.
 

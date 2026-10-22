@@ -5,3 +5,6 @@
 Thumbs.db
 
 *.log
+
+# Local compilation evidence and preserved artifacts
+/.build/

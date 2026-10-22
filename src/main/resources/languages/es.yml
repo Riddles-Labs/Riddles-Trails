@@ -67,6 +67,7 @@ messages:
       - "<yellow>/riddlesquesttrail show \\<player> location \\<world> \\<x> \\<y> \\<z></yellow>"
       - "<yellow>/riddlesquesttrail \\<clear|status> \\<player></yellow>"
   record:
+    saving: "<yellow>Guardando esta ruta; espera antes de cambiar la grabación.</yellow>"
     active: "<red>Primero guarda o cancela la grabación actual.</red>"
     cancelled: "<yellow>Grabación cancelada. Los destinos guardados no han cambiado.</yellow>"
     limit: "<yellow>Se alcanzó el límite de puntos. Usa /riddlestrails save o /riddlestrails cancel.</yellow>"

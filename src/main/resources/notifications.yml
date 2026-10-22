@@ -1,0 +1,6 @@
+## Message delivery (optional)
+## Default: chat, no sound. Text stays in languages/<locale>.yml.
+## Example: trail.arrived: {delivery: action-bar}
+## Delivery: chat, action-bar, title or silent. Reload with /riddlestrails reload.
+schema-version: 1
+overrides: {}

@@ -13,19 +13,57 @@ public final class TrailMessages implements TabExecutor {
     private final JavaPlugin plugin;
     private final PaperModule module;
     private final ModuleLanguages languages;
+    private final TrailNotifications notifications;
+    private final java.util.concurrent.atomic.AtomicLong nextWarning = new java.util.concurrent.atomic.AtomicLong();
     public TrailMessages(JavaPlugin plugin, PaperModule module) throws Exception {
         this.plugin = plugin; this.module = module;
         var bundled = new LinkedHashMap<String, String>();
         for (String locale : List.of("en", "es")) try (var input = Objects.requireNonNull(plugin.getResource("languages/" + locale + ".yml"))) {
             bundled.put(locale, new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
-        languages = module.languages("en", bundled);
+        String policy = TrailLanguageGuide.policy(plugin,module);
+        languages = module.languages("en", bundled, policy, TrailLanguageGuide.documentation(policy));
+        var yaml = new org.bukkit.configuration.file.YamlConfiguration();
+        yaml.loadFromString(bundled.get("en"));
+        var keys = new HashSet<String>();
+        for (String path : yaml.getConfigurationSection("messages").getKeys(true))
+            if (!yaml.isConfigurationSection("messages." + path)) keys.add(path);
+        notifications = new TrailNotifications(plugin, module, keys);
+        try { reloadNotifications(); }
+        catch (Exception failure) { plugin.getLogger().warning("Invalid notifications.yml; using chat: " + failure.getMessage()); }
     }
     public void send(CommandSender sender, String key, Object... pairs) {
         if (pairs.length % 2 != 0) throw new IllegalArgumentException("Expected variable/value pairs");
         var values = new LinkedHashMap<String, Object>();
         for (int i = 0; i < pairs.length; i += 2) values.put((String)pairs[i], pairs[i + 1]);
-        languages.send(sender, key, values);
+        if (sender instanceof Player player) {
+            try {
+                module.notifications().send(player, languages, notifications.profile(key), values)
+                        .whenComplete((ignored,failure)->{if(failure!=null) notificationFailure(failure);});
+            } catch (RuntimeException failure) { notificationFailure(failure); }
+        } else languages.send(sender, key, values);
+    }
+    public void reloadNotifications() throws Exception {
+        try { notifications.reload(); module.facilities().health().update("notifications",
+                com.riddleslabs.api.health.HealthStatus.HEALTHY,"READY"); }
+        catch (Exception failure) {
+            module.facilities().health().update("notifications",com.riddleslabs.api.health.HealthStatus.DEGRADED,"CONFIG_REJECTED");
+            throw failure;
+        }
+    }
+    private void notificationFailure(Throwable failure) {
+        long now=System.nanoTime(),next=nextWarning.get();
+        if(now>=next && nextWarning.compareAndSet(next,now+java.time.Duration.ofMinutes(1).toNanos()))
+            plugin.getLogger().warning("Trail notification unavailable: "+failure.getClass().getSimpleName());
+    }
+    public void after(CommandSender sender, java.util.concurrent.CompletionStage<?> saved, Runnable success) {
+        after(sender,saved,success,()->{});
+    }
+    public void after(CommandSender sender, java.util.concurrent.CompletionStage<?> saved, Runnable success, Runnable failed) {
+        saved.whenComplete((ignored,failure)->reply(sender,()->{
+            if (failure == null) success.run();
+            else { failed.run(); plugin.getLogger().warning("Trail save failed: "+failure.getMessage()); send(sender,"errors.failed"); }
+        }));
     }
     public String noticeIdentity(Player player, String key, Object... pairs) {
         return key + ":" + languages.report().revision() + ":" + languages.locale(player).toLanguageTag() + ":" + Arrays.toString(pairs);

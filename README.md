@@ -1,18 +1,20 @@
 # Riddles Trails
 
-Personal particle navigation built on **RiddlesLabsCore**. Release **1.6.1**, packaged as a native Paper plugin with Folia support.
+**1.6.3 requires Core 0.6.10.** Shared notification parsing, file relocation, file coordination and numeric parsers now live in Core. Existing settings and data formats stay intact.
 
-**Build target:** Java 25 / Paper API 26.2. Ordinary trails use Core's entity scheduler on Paper and Folia. The optional Citizens/BeautyQuests quest integration remains **Paper-only**. Core API >=0.6.7,<0.7.0 is required; no economy plugin or database is required.
+Personal particle navigation built on **RiddlesLabsCore**. Release **1.6.3**, packaged as a native Paper plugin with Folia support.
+
+**Build target:** Java 25 / Paper API 26.2. Ordinary trails use Core's entity scheduler on Paper and Folia. The optional Citizens/BeautyQuests quest integration remains **Paper-only**. Core API >=0.6.10,<0.7.0 is required; no economy plugin or database is required.
 
 ## Install and upgrade
 
 1. Stop the server and keep a backup of the previous plugin JAR and data folder.
-2. Remove the previous Trails JAR. Install `RiddlesLabsCore-0.6.7.jar` and `RiddlesTrails-1.6.1.jar` together.
+2. Remove the previous Trails JAR. Install `RiddlesLabsCore-0.6.10.jar` and `RiddlesTrails-1.6.3.jar` together.
 3. For an upgrade, copy the previous Trails data into `plugins/RiddlesTrails/`. The files remain `config.yml`, `destinations.yml`, `animations.yml` and `animation-preferences.yml`.
 4. Update permissions to `riddlestrails.*` and any fully qualified built-in animation IDs to `riddlestrails:<effect>`. Short animation IDs still work. Keep third-party animation namespaces unchanged.
 5. Start the server. Core must be enabled before Trails; Trails refuses to start without a compatible Core API.
 
-No server files are automatically copied or rewritten by this source migration. See [upgrade details](docs/CORE-ADOPTION.md) before replacing an installed version. Do not install the API-only JAR on the server.
+On startup, the legacy root language.yml moves to languages/language.yml when the destination is absent. Existing catalogs receive short managed comments with backups; translations remain unchanged. If both policy files exist, both are kept and the root policy remains active. See [upgrade details](docs/CORE-ADOPTION.md) before replacing an installed version. Do not install the API-only JAR on the server.
 
 The plugin retains all 47 effects, route geometry and destination/preference file formats. It uses Core's lifecycle, task ownership, commands, listeners, configuration loader, service registry, placeholders, startup banners and FastStats. Particle rendering and quest logic remain in Trails.
 
@@ -20,15 +22,17 @@ Primary commands are `/riddlestrails`, `/riddlestrailanimation` and `/riddlesque
 
 Animation settings come from `plugins/RiddlesTrails/animations.yml`. Missing new defaults are applied to a private configuration snapshot without overwriting operator edits. UUID selections and style overrides remain in `animation-preferences.yml`. See the [animation catalog](docs/ANIMATIONS.md).
 
+See [Core 0.6.10 adaptation](docs/CORE-0.6.9-ADAPTATION.md) for asynchronous saving, notification settings and API compatibility.
+
 ## Build
 
-Build in `F:/Plugins Coding/RiddlesTrails`, with Core's SDK installed from `F:/Plugins Coding/RiddlesLabCore`:
+Build in `F:/Plugins Coding/RiddlesTrails`, with Core's SDK installed from `F:/Plugins Coding/RiddlesCore`:
 
 ```text
 mvn -B -ntp -Dmaven.test.skip=true -DskipITs=true clean package
 ```
 
-The output is `target/RiddlesTrails-1.6.1.jar`. Core dependencies have Maven `provided` scope and are not bundled. The owner performs all testing on their server; this project defaults to skipping tests. No tests, benchmarks or servers were run for this migration.
+The output is `target/RiddlesTrails-1.6.3.jar`. Core dependencies have Maven `provided` scope and are not bundled. The owner performs all testing on their server; this project defaults to skipping tests. No tests, benchmarks or servers were run for this migration.
 
 ## Quick waypoint
 

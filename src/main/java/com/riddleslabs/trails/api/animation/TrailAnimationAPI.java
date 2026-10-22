@@ -4,7 +4,12 @@ import java.util.Set;
 import java.util.UUID;
 import org.bukkit.plugin.Plugin;
 
-/** Load through Bukkit's ServicesManager. IDs are namespaced, e.g. myplugin:aurora. */
+/**
+ * Load through Bukkit's ServicesManager. IDs are namespaced, e.g. myplugin:aurora.
+ * Prefer the async mutation methods. Legacy void mutations wait for durable saving and may block
+ * their caller; calls from Trails' shared Core file worker are rejected to avoid a deadlock.
+ * Do not block or join an async result on that worker or on server threads.
+ */
 public interface TrailAnimationAPI {
     void register(Plugin owner, String id, TrailAnimation animation);
     /** Only the registering owner can unregister an animation. */
@@ -26,4 +31,17 @@ public interface TrailAnimationAPI {
     void setStyle(UUID playerId, AnimationStyle style);
     /** Durably removes only the style override, preserving the selected animation. */
     void resetStyle(UUID playerId);
+    /** Nonblocking durable mutations. Complete only after save; failures retain the previous value. */
+    default java.util.concurrent.CompletionStage<Void> selectAsync(UUID player, String animation) {
+        return java.util.concurrent.CompletableFuture.failedFuture(new UnsupportedOperationException("Async preferences unavailable"));
+    }
+    default java.util.concurrent.CompletionStage<Void> resetAsync(UUID player) {
+        return java.util.concurrent.CompletableFuture.failedFuture(new UnsupportedOperationException("Async preferences unavailable"));
+    }
+    default java.util.concurrent.CompletionStage<Void> setStyleAsync(UUID player, AnimationStyle style) {
+        return java.util.concurrent.CompletableFuture.failedFuture(new UnsupportedOperationException("Async preferences unavailable"));
+    }
+    default java.util.concurrent.CompletionStage<Void> resetStyleAsync(UUID player) {
+        return java.util.concurrent.CompletableFuture.failedFuture(new UnsupportedOperationException("Async preferences unavailable"));
+    }
 }

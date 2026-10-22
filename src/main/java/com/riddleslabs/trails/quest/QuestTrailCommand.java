@@ -34,13 +34,13 @@ public final class QuestTrailCommand implements TabExecutor {
             }
             if (!args[0].equalsIgnoreCase("show")) return usage(sender);
             if (args.length == 4 && args[2].equalsIgnoreCase("npc")) {
-                int npc = Integer.parseInt(args[3]);
+                int npc = com.riddleslabs.trails.TrailArguments.npcId(args[3]);
                 api.showToNpc(player.getUniqueId(), npc);
             } else if (args.length == 7 && args[2].equalsIgnoreCase("location")) {
                 World world = Bukkit.getWorld(args[3]);
                 if (world == null) throw new IllegalArgumentException("World is not loaded");
                 api.showToLocation(player.getUniqueId(), new Location(world,
-                        Double.parseDouble(args[4]), Double.parseDouble(args[5]), Double.parseDouble(args[6])));
+                        com.riddleslabs.trails.TrailArguments.coordinate(args[4]), com.riddleslabs.trails.TrailArguments.coordinate(args[5]), com.riddleslabs.trails.TrailArguments.coordinate(args[6])));
             } else return usage(sender);
             messages.send(sender, "quest.assigned", "player", player.getName());
         } catch (IllegalArgumentException | IllegalStateException ex) { messages.failure(sender, "quest.failed", ex); }

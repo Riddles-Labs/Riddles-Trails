@@ -36,14 +36,16 @@ public final class AnimationEngine implements TrailAnimationAPI, Listener {
     private final JavaPlugin plugin;
     private final Map<String,Registration> registry=new ConcurrentHashMap<>();
     private final AnimationPreferences preferences;
+    private final com.riddleslabs.api.files.FileCoordinator persistence;
     private final Map<Key,FrameState> states=new ConcurrentHashMap<>();
     private volatile AnimationConfig config;
     private final ReloadableConfiguration<AnimationConfig> configuration;
     private volatile boolean closed;
 
-    public AnimationEngine(JavaPlugin plugin, YamlConfigurations configurations) {
+    public AnimationEngine(JavaPlugin plugin, YamlConfigurations configurations, com.riddleslabs.api.files.FileCoordinator persistence) {
         this.plugin=plugin;
-        preferences=new AnimationPreferences(plugin.getDataFolder().toPath().resolve("animation-preferences.yml"));
+        this.persistence=persistence;
+        preferences=persistence.blocking(() -> new AnimationPreferences(persistence));
         BuiltInAnimations.all().forEach((id,animation)->registry.put(id,new Registration(plugin,animation)));
         try (var input=Objects.requireNonNull(plugin.getResource("animations.yml"));
              var reader=new InputStreamReader(input,StandardCharsets.UTF_8)) {
@@ -97,16 +99,28 @@ public final class AnimationEngine implements TrailAnimationAPI, Listener {
     @Override public void select(UUID playerId,String name) {
         open();String id=id(name);
         if(!registry.containsKey(id)) throw new IllegalArgumentException("Unknown animation: "+id);
-        preferences.select(playerId,id); clearStates(playerId);
+        persistence.blocking(() -> { preferences.select(playerId,id); clearStates(playerId); return null; });
     }
-    @Override public void reset(UUID playerId) { open();preferences.select(playerId,null);clearStates(playerId); }
+    @Override public void reset(UUID playerId) { open();persistence.blocking(() -> { preferences.select(playerId,null);clearStates(playerId);return null; }); }
     @Override public String selected(UUID playerId) {
         String requested=preferences.selection(playerId,config.selected());
         return registry.containsKey(requested)?requested:config.fallback();
     }
-    @Override public void setStyle(UUID playerId,AnimationStyle style) { open();preferences.setStyle(playerId,Objects.requireNonNull(style)); }
+    @Override public void setStyle(UUID playerId,AnimationStyle style) { open();Objects.requireNonNull(style);persistence.blocking(() -> { preferences.setStyle(playerId,style);return null; }); }
     @Override public AnimationStyle style(String animationId) { return config.style(id(animationId)); }
-    @Override public void resetStyle(UUID playerId) { open();preferences.setStyle(playerId,null); }
+    @Override public void resetStyle(UUID playerId) { open();persistence.blocking(() -> { preferences.setStyle(playerId,null);return null; }); }
+    @Override public java.util.concurrent.CompletionStage<Void> selectAsync(UUID player, String name) {
+        return persistence.submit(() -> { select(player, name); return null; });
+    }
+    @Override public java.util.concurrent.CompletionStage<Void> resetAsync(UUID player) {
+        return persistence.submit(() -> { reset(player); return null; });
+    }
+    @Override public java.util.concurrent.CompletionStage<Void> setStyleAsync(UUID player, AnimationStyle style) {
+        return persistence.submit(() -> { setStyle(player, style); return null; });
+    }
+    @Override public java.util.concurrent.CompletionStage<Void> resetStyleAsync(UUID player) {
+        return persistence.submit(() -> { resetStyle(player); return null; });
+    }
     private void clearStates(UUID id) { states.keySet().removeIf(key->key.player.equals(id)); }
     public void forget(UUID player,TrailKind kind) { states.remove(new Key(player,kind)); }
 

@@ -1,6 +1,6 @@
 # Riddles Trails owner instructions
 
-Edit and build this project in F:/Plugins Coding/RiddlesTrails. The authoritative Core project is F:/Plugins Coding/RiddlesLabCore.
+Edit and build this project in F:/Plugins Coding/RiddlesTrails. The authoritative Core project is F:/Plugins Coding/RiddlesCore.
 
 Do not run tests, test harnesses, benchmarks or Minecraft servers. The owner performs all testing. Compile/package only with -Dmaven.test.skip=true -DskipITs=true. Never claim runtime validation from compilation.
 

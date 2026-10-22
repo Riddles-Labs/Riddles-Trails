@@ -19,10 +19,13 @@ public final class AnimationCommand implements TabExecutor {
         if(target==null) try {target=Bukkit.getPlayer(UUID.fromString(args[1]));} catch(IllegalArgumentException ignored) {}
         if(target==null) {messages.send(sender, "errors.online");return true;}
         try {
-            if(args.length==3&&args[0].equalsIgnoreCase("set")) api.select(target.getUniqueId(),args[2]);
-            else if(args.length==2&&args[0].equalsIgnoreCase("reset")) api.reset(target.getUniqueId());
+            UUID targetId=target.getUniqueId();
+            String targetName=target.getName();
+            java.util.concurrent.CompletionStage<Void> saved;
+            if(args.length==3&&args[0].equalsIgnoreCase("set")) saved=api.selectAsync(targetId,args[2]);
+            else if(args.length==2&&args[0].equalsIgnoreCase("reset")) saved=api.resetAsync(targetId);
             else return usage(sender);
-            messages.send(sender, "animation.selected", "player", target.getName(), "animation", api.selected(target.getUniqueId()));
+            messages.after(sender, saved, () -> messages.send(sender, "animation.selected", "player", targetName, "animation", api.selected(targetId)));
         } catch(IllegalArgumentException|IllegalStateException ex) {messages.failure(sender, "animation.failed", ex);}
         return true;
     }

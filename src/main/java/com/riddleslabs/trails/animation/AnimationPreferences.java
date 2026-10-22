@@ -1,9 +1,6 @@
 package com.riddleslabs.trails.animation;
 
 import com.riddleslabs.trails.api.animation.AnimationStyle;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
 import java.util.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -11,15 +8,17 @@ import org.bukkit.configuration.file.YamlConfiguration;
 /** Durable UUID preferences. Publish changes only after their atomic file replacement succeeds. */
 final class AnimationPreferences {
     private record Preference(String animation, AnimationStyle style) {}
-    private final Path file;
+    private final com.riddleslabs.api.files.FileCoordinator persistence;
+    private static final String FILE = "animation-preferences.yml";
     private volatile Map<UUID, Preference> entries = Map.of();
 
-    AnimationPreferences(Path file) {
-        this.file = file;
-        if (!Files.exists(file)) return;
+    AnimationPreferences(com.riddleslabs.api.files.FileCoordinator persistence) {
+        this.persistence = persistence;
+        String content = persistence.read(FILE);
+        if (content == null) { persistence.acceptRead(FILE); return; }
         try {
             YamlConfiguration yaml = new YamlConfiguration();
-            yaml.load(file.toFile());
+            yaml.loadFromString(content);
             if (yaml.getInt("version") != 1) throw new IllegalArgumentException("Unsupported preferences version");
             ConfigurationSection players = Objects.requireNonNull(yaml.getConfigurationSection("players"), "players");
             Map<UUID, Preference> loaded = new HashMap<>();
@@ -31,8 +30,10 @@ final class AnimationPreferences {
                         style == null ? null : AnimationConfig.parse(style, null)));
             }
             entries = Map.copyOf(loaded);
+            persistence.acceptRead(FILE);
         } catch (Exception ex) {
-            throw new IllegalStateException("Could not load animation preferences from " + file, ex);
+            persistence.health(FILE, false);
+            throw new IllegalStateException("Could not load animation preferences from " + FILE, ex);
         }
     }
 
@@ -69,22 +70,8 @@ final class AnimationPreferences {
             section.set("animation", value.animation);
             if (value.style != null) writeStyle(section.createSection("style"), value.style);
         });
-        Path temporary = null;
-        try {
-            Files.createDirectories(file.getParent());
-            temporary = Files.createTempFile(file.getParent(), "animation-preferences-", ".tmp");
-            Files.writeString(temporary, yaml.saveToString(), StandardCharsets.UTF_8);
-            try {
-                Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            } catch (AtomicMoveNotSupportedException ex) {
-                Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
-            }
-            entries = Map.copyOf(updated);
-        } catch (IOException ex) {
-            throw new IllegalStateException("Could not save animation preferences; the previous preferences were kept", ex);
-        } finally {
-            if (temporary != null) try { Files.deleteIfExists(temporary); } catch (IOException ignored) {}
-        }
+        persistence.write(FILE, yaml.saveToString());
+        entries = Map.copyOf(updated);
     }
 
     private static void writeStyle(ConfigurationSection section, AnimationStyle style) {

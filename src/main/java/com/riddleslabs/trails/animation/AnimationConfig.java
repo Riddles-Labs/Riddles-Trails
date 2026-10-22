@@ -32,7 +32,7 @@ record AnimationConfig(String selected, String fallback, AnimationStyle common, 
         Map<String,Double> parameters=new HashMap<>();
         if(defaults!=null) parameters(defaults,parameters);
         parameters(section,parameters);
-        return new AnimationStyle(Particle.valueOf(Objects.toString(get.apply("particle")).toUpperCase(Locale.ROOT)),palette,
+        return new AnimationStyle(com.riddleslabs.paper.api.command.argument.TypedArguments.enumeration(Particle.class).parse(Objects.toString(get.apply("particle"))),palette,
                 number(get.apply("period-seconds")),number(get.apply("scale")),number(get.apply("width")),number(get.apply("height")),
                 number(get.apply("brightness")),number(get.apply("base-brightness")),(float)number(get.apply("size")),
                 (int)number(get.apply("duration-ticks")),parameters);

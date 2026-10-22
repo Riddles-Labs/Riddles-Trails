@@ -9,7 +9,7 @@ All current Trails command replies, help, permission replies, recording notices,
 Existing routes, animations and preferences retain their existing formats. No live-server files were touched during development. The first startup adds these files when absent:
 
 ```
-plugins/RiddlesTrails/language.yml
+plugins/RiddlesTrails/languages/language.yml
 plugins/RiddlesTrails/languages/en.yml
 plugins/RiddlesTrails/languages/es.yml
 ```
@@ -28,14 +28,14 @@ plugins/RiddlesTrails/languages/es.yml
 
 Edit message text in `languages/en.yml` or `languages/es.yml`, then run `/rtl reload`. Keep message keys and `<var_name>` placeholders intact. Color/style tags must be closed. Values inserted by the plugin cannot inject formatting. Use `''` or `[]` to suppress a particular message, or remove a custom override to inherit the bundled value. Reload failure keeps the previously working language set and logs the reason. Fix the file and reload again. Invalid files on startup prevent Trails from enabling until corrected.
 
-The default `language.yml` uses each player's Minecraft client language, falling back to English. To make Spanish the server fallback, set `server-locale: es`. To force server language for everyone, set **both** `use-client-locale: false` and `allow-player-override: false`. Console uses the server locale.
+The default `languages/language.yml` uses each player's Minecraft client language, falling back to English. To make Spanish the server fallback, set `server-locale: es`. To force server language for everyone, set **both** `use-client-locale: false` and `allow-player-override: false`. Console uses the server locale.
 
 Player choices are stored through Core in Minecraft's player data and can be shared with other plugins that adopt the same Core service. Existing RRM/TNE language settings have not been migrated. This preference does not synchronize between separate servers.
 
 ## Add another language
 
 1. Create `languages/fr.yml` with `schema-version: 1` and a `messages` section. Use an existing catalog as a reference.
-2. Add `fr` to the `locales` list in `language.yml`.
+2. Add `fr` to the `locales` list in `languages/language.yml`.
 3. Translate text while keeping keys, commands and variables unchanged. A partial catalog is allowed; missing keys use the fallback chain.
 4. Run `/rtl reload`, then `/rtl status` to see the number of keys still using fallback. Players can select `/rtl fr`.
 
@@ -52,3 +52,10 @@ Use the Core repository's `docs/LANGUAGES.md` for the shared API and format. The
 ## Build scope
 
 Compilation/package and static source/archive review only. No tests or test compilation, server runs, live data changes, pushes or deployment. Actual-server behavior remains for the owner to validate.
+
+## Version 1.6.2
+
+Existing root language settings move into languages automatically when there is no
+conflict. If both policy files exist, both are preserved and the root policy stays active.
+Core adds short managed headings and backs up changed catalogs. Translations stay intact.
+Optional delivery settings are in notifications.yml; reload those with /riddlestrails reload.

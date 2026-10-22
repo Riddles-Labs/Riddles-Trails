@@ -17,7 +17,7 @@ Riddles Trails requires RiddlesLabsCore API >=0.6.5,<0.7.0. Its descriptor decla
 | FastStats | Per-plugin configured context; aggregate destinations, active trails, animations and recordings |
 | Placeholders | Cached destination and active trail counts through Core's optional PlaceholderAPI bridge |
 
-Route geometry, particles, recording rules, animation registry, player preferences, quest progress and their YAML file formats remain product-owned. Existing synchronous route/preference writes retain their original behavior; Core adoption does not change that persistence contract. Independent config files publish their own valid snapshots; a multi-file reload is not an all-files transaction.
+Route geometry, particles, recording rules, animation registry, player preferences, quest progress and their YAML file formats remain product-owned. As of 1.6.2, commands save through Core background workers and revision-checked files. Existing synchronous animation API calls still wait for saving; asynchronous variants are available. See [the adaptation guide](CORE-0.6.9-ADAPTATION.md). Independent config files publish their own valid snapshots; a multi-file reload is not an all-files transaction.
 
 The quest extension still requires Paper because Citizens/BeautyQuests access and loaded-world collision searches use its server-thread model. Core scheduling alone does not make those integrations Folia-compatible. No economy provider is used or required by Trails.
 
