@@ -22,6 +22,7 @@ import com.riddleslabs.paper.api.scheduler.ModuleScheduler;
 /** Paper server-thread implementation. Quest assignments are rebuilt from progress on login. */
 public final class QuestTrailService implements QuestTrailAPI, Listener {
     private final JavaPlugin plugin;
+    private final TrailMessages messages;
     private final ModuleScheduler scheduler;
     private final Supplier<Config> configuration;
     private final RouteStore store;
@@ -33,7 +34,8 @@ public final class QuestTrailService implements QuestTrailAPI, Listener {
     private volatile boolean closed;
     private Config config;
 
-    public QuestTrailService(JavaPlugin plugin, ModuleScheduler scheduler, RouteStore store, Supplier<TrailSettings> settings, Supplier<Config> configuration) {
+    public QuestTrailService(JavaPlugin plugin, ModuleScheduler scheduler, RouteStore store, Supplier<TrailSettings> settings, Supplier<Config> configuration, TrailMessages messages) {
+        this.messages = messages;
         this.plugin = plugin;
         this.scheduler = Objects.requireNonNull(scheduler);
         this.configuration = Objects.requireNonNull(configuration);
@@ -96,7 +98,7 @@ public final class QuestTrailService implements QuestTrailAPI, Listener {
             if (++session.ticks % render.interval() != 0) continue;
             try { render(player, session, render); }
             catch (ReflectiveOperationException | IllegalStateException ex) {
-                notice(player, session, "The quest NPC is unavailable. Guidance will resume when it returns.");
+                notice(player, session, "quest.notice-npc-unavailable");
                 if (!session.warned) { plugin.getLogger().warning("Quest trail target unavailable: " + ex.getMessage()); session.warned = true; }
             }
         }
@@ -105,15 +107,15 @@ public final class QuestTrailService implements QuestTrailAPI, Listener {
     private void render(Player player, Session session, TrailSettings render) throws ReflectiveOperationException {
         if (player.isDead()) return;
         Location target = session.npcId == null ? session.destination : CitizensTarget.location(session.npcId);
-        if (target == null) { notice(player, session, "The quest NPC is not spawned. Guidance is paused."); return; }
+        if (target == null) { notice(player, session, "quest.notice-npc-paused"); return; }
         if (!player.getWorld().equals(target.getWorld())) {
             session.planTarget = null;
-            notice(player, session, "Your quest destination is in " + target.getWorld().getName() + ". Travel there to resume guidance.");
+            notice(player, session, "quest.notice-world", "world", target.getWorld().getName());
             return;
         }
         Route.Point position = TrailService.point(player.getLocation()), endpoint = TrailService.point(target);
         if (position.distanceSquared(endpoint) <= render.arrivalRadius() * render.arrivalRadius()) {
-            notice(player, session, "Quest destination reached."); return;
+            notice(player, session, "quest.notice-arrived"); return;
         }
         double progress=session.plan==null?0:session.plan.path.progress(position);
         boolean offPath = session.plan != null && session.plan.path.at(progress).distanceSquared(position) > 9;
@@ -127,7 +129,7 @@ public final class QuestTrailService implements QuestTrailAPI, Listener {
             session.config = config;
         }
         if (session.plan == null) {
-            notice(player, session, "No walkable connection to a configured quest route is currently available.");
+            notice(player, session, "quest.notice-no-connection");
             return;
         }
         RouteGeometry.Path path = session.plan.path;
@@ -142,11 +144,11 @@ public final class QuestTrailService implements QuestTrailAPI, Listener {
             if (d >= end) break;
         }
         if (visible.isEmpty()) {
-            notice(player, session, "The next part of the quest route is obstructed or not loaded."); return;
+            notice(player, session, "quest.notice-obstructed"); return;
         }
         session.warned = false;
         if (session.plan.teleport && position.distanceSquared(path.end()) <= 2.25)
-            notice(player, session, "Use the elevator or teleport here; your trail continues on the other side.");
+            notice(player, session, "quest.notice-teleport");
         else session.notice = null;
         RouteGeometry.Path display = new RouteGeometry.Path(visible);
         TrailParticles.render(player,render,display,Math.min(display.length(),render.minAhead()),display.length(),
@@ -180,8 +182,9 @@ public final class QuestTrailService implements QuestTrailAPI, Listener {
         return partial;
     }
 
-    private static void notice(Player player, Session session, String message) {
-        if (!message.equals(session.notice)) { player.sendMessage("§e" + message); session.notice = message; }
+    private void notice(Player player, Session session, String key, Object... values) {
+        String identity = messages.noticeIdentity(player, key, values);
+        if (!identity.equals(session.notice)) { messages.send(player, key, values); session.notice = identity; }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

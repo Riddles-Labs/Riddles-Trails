@@ -13,19 +13,20 @@ import com.riddleslabs.trails.api.animation.TrailKind;
 /** Personal forward-moving TRAIL particles, color-transition accents, and dust glow owned by Riddles Trails. */
 public final class TrailService {
     private final ModuleScheduler scheduler;
+    private final TrailMessages messages;
     private final Map<UUID, Session> sessions = new ConcurrentHashMap<>();
-    public TrailService(ModuleScheduler scheduler) { this.scheduler = java.util.Objects.requireNonNull(scheduler); }
+    public TrailService(ModuleScheduler scheduler, TrailMessages messages) { this.scheduler = java.util.Objects.requireNonNull(scheduler); this.messages = messages; }
     public int activeCount() { return sessions.size(); }
 
     public void start(Player player, Route destination, TrailSettings settings) {
         if (!player.getWorld().getName().equals(destination.world())) {
-            player.sendMessage("§cThis destination is in world §f" + destination.world() + "§c. Travel there first.");
+            messages.send(player, "trail.world", "world", destination.world());
             return;
         }
         Route.Point from = point(player.getLocation());
         if (from.distanceSquared(destination.points().getLast()) <= settings.arrivalRadius() * settings.arrivalRadius()) {
             stop(player.getUniqueId());
-            player.sendMessage("§aYou are already at " + destination.id() + ".");
+            messages.send(player, "trail.already-there", "id", destination.id());
             return;
         }
         stop(player.getUniqueId());
@@ -39,7 +40,7 @@ public final class TrailService {
             }, session::retired);
             if (session.task.isDone() || sessions.get(player.getUniqueId()) != session) { session.task.cancel(); session.retired(); return; }
         } catch (RuntimeException failure) { session.retired(); throw failure; }
-        player.sendMessage("§aFollow the trail to §f" + destination.id() + "§a. §7/riddlestrails stop to cancel.");
+        messages.send(player, "trail.follow", "id", destination.id());
     }
 
     public boolean stop(UUID id) {
@@ -77,7 +78,7 @@ public final class TrailService {
             if (sessions.remove(player.getUniqueId(), this)) {
                 cancel();
                 TrailParticles.forget(player.getUniqueId(),TrailKind.ORDINARY);
-                if (message != null && player.isOnline()) player.sendMessage(message);
+                if (message != null && player.isOnline()) messages.send(player, message, "id", destination.id());
             }
         }
         void tick() {
@@ -86,7 +87,7 @@ public final class TrailService {
                 finish(null); return;
             }
             if ((System.nanoTime() - started) / 1_000_000_000L >= settings.timeoutSeconds()) {
-                finish("§eTrail timed out. Use /riddlestrails " + destination.id() + " to restart."); return;
+                finish("trail.timeout"); return;
             }
             if (!player.getWorld().getName().equals(destination.world())) {
                 needsRejoin.set(true);
@@ -96,7 +97,7 @@ public final class TrailService {
             if (needsRejoin.getAndSet(false))
                 path = new RouteGeometry.Path(RouteGeometry.join(position, destination));
             if (position.distanceSquared(destination.points().getLast()) <= settings.arrivalRadius() * settings.arrivalRadius()) {
-                finish("§aDestination reached: §f" + destination.id()); return;
+                finish("trail.arrived"); return;
             }
             double progress = path.progress(position);
             double end = Math.min(path.length(), progress + settings.maxAhead());

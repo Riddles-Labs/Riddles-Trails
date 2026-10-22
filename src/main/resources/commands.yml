@@ -1,0 +1,19 @@
+# Command metadata used by Core Paper lifecycle registration.
+# This is a bundled resource, not a server-editable command configuration.
+commands:
+  riddlestrailslanguage:
+    aliases: [rtl]
+    description: Choose your language or reload language catalogs.
+    usage: /riddlestrailslanguage <auto|locale|list|reload|status>
+  riddlestrailanimation:
+    aliases: [trailanimation, rta]
+    description: List and select configurable trail animations.
+    usage: /riddlestrailanimation <list|set|reset> [player] [id]
+  riddlesquesttrail:
+    aliases: [questtrail, rqt]
+    description: Assign private quest guidance to an NPC or location.
+    usage: /riddlesquesttrail <show|clear|status> <player>
+  riddlestrails:
+    aliases: [trail, trails, rt]
+    description: Follow a particle trail to a destination.
+    usage: /riddlestrails <destination|list|stop|help>

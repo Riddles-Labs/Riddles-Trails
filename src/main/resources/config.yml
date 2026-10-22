@@ -1,4 +1,5 @@
-# Riddles Trails - Java 25; requires RiddlesLabsCore API 0.5.x.
+# Riddles Trails - Java 25; requires RiddlesLabsCore API 0.6.5 or newer within 0.6.x.
+# Player messages and locale policy are in languages/*.yml and language.yml. Reload with /rtl reload.
 # Simple waypoints draw a direct guide. Record a route to follow roads or avoid obstacles.
 render:
   update-interval-ticks: 6

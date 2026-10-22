@@ -1,0 +1,48 @@
+{
+  "release": "Core 0.6.5 / Trails 1.6.0 language integration",
+  "date": "2026-10-21",
+  "evidence": "Compilation and static source/archive inspection only. Tests and test compilation skipped. No server run or deployment.",
+  "core_build_api_baselines": [
+    "26.1.2.build.53-stable (delivered)",
+    "26.2.build.133-stable (additional compilation)"
+  ],
+  "trails_build_api": "26.2.build.133-stable",
+  "artifacts": [
+    {
+      "path": "F:\\Plugins Coding\\RiddlesLabCore\\riddleslabs-core\\target\\RiddlesLabsCore-0.6.5.jar",
+      "bytes": 35386458,
+      "sha256": "5d70d87f80dd61e6533f156896c9018542dfc69b1a6c45017e16a57284b03e41",
+      "descriptor": [
+        "name: RiddlesLabsCore",
+        "version: '0.6.5'",
+        "api-version: '26.1'",
+        "folia-supported: true"
+      ],
+      "catalogs": [],
+      "core_api_classes": 158,
+      "icu_classes": 1696,
+      "icu_data_resources": 4035,
+      "icu_license": true
+    },
+    {
+      "path": "F:\\Plugins Coding\\RiddlesTrails\\target\\RiddlesTrails-1.6.0.jar",
+      "bytes": 157635,
+      "sha256": "0f92224923629dcaa9cf19d6ad17627589d05038302417e81db56b4f6f72ec7b",
+      "descriptor": [
+        "name: RiddlesTrails",
+        "version: 1.6.0",
+        "api-version: '26.2'",
+        "folia-supported: true",
+        "depend: [RiddlesLabsCore]"
+      ],
+      "catalogs": [
+        "languages/en.yml",
+        "languages/es.yml"
+      ],
+      "core_api_classes": 0,
+      "icu_classes": 0,
+      "icu_data_resources": 0,
+      "icu_license": false
+    }
+  ]
+}

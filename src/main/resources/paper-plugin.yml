@@ -4,24 +4,25 @@ version: ${project.version}
 description: Personal particle trails to saved waypoints and recorded routes.
 api-version: '${minecraft.api.version}'
 folia-supported: true
-author: Riddles Labs
-depend: [RiddlesLabsCore]
-softdepend: [Citizens, BeautyQuests]
-commands:
-  riddlestrailanimation:
-    aliases: [trailanimation, rta]
-    description: List and select configurable trail animations.
-    usage: /riddlestrailanimation <list|set|reset> [player] [id]
-    permission: riddlestrails.animation.admin
-  riddlesquesttrail:
-    aliases: [questtrail, rqt]
-    description: Assign private quest guidance to an NPC or location.
-    usage: /riddlesquesttrail <show|clear|status> <player>
-    permission: riddlestrails.quest.admin
-  riddlestrails:
-    aliases: [trail, trails, rt]
-    description: Follow a particle trail to a destination.
-    usage: /riddlestrails <destination|list|stop|help>
+author: RiddlesLabs
+load: POSTWORLD
+
+# Required/optional integrations load first and share their API classes.
+dependencies:
+  server:
+    RiddlesLabsCore:
+      load: BEFORE
+      required: true
+      join-classpath: true
+    Citizens:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    BeautyQuests:
+      load: BEFORE
+      required: false
+      join-classpath: true
+
 permissions:
   riddlestrails.animation.admin:
     description: Select animations for players' ordinary and quest trails.

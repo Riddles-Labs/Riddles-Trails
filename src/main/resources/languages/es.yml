@@ -1,0 +1,100 @@
+# Editable messages. Keep keys, commands and <var_name> arguments unchanged.
+# Empty string or [] suppresses a message. Reload: /rtl reload
+# Supported styles: colors, decorations, gradients, rainbow and newline. Close style tags.
+schema-version: 1
+messages:
+  animation:
+    denied: "<red>No tienes permiso para administrar las animaciones.</red>"
+    failed: "<red>No se pudo cambiar la animación. Comprueba el identificador con /riddlestrailanimation list y consulta la consola.</red>"
+    list: "<aqua>Animaciones: <white><var_animations></white></aqua>"
+    selected: "<green>Animación de <var_player>: <var_animation></green>"
+    usage: "<yellow>/riddlestrailanimation list | set \\<player> \\<id> | reset \\<player></yellow>"
+  destination:
+    confirm-delete: "<yellow>Confirma con /riddlestrails delete \\<id> DELETE</yellow>"
+    deleted: "<green>Se eliminó <var_id>.</green>"
+    empty: "<aqua>Destinos: <white>Todavía no hay ninguno.</white></aqua>"
+    list: "<aqua>Destinos: <white><var_destinations></white></aqua>"
+    not-found: "<red>No se encontró el destino.</red>"
+    saved: "<green>Punto guardado: <white><var_id><gray>. Los jugadores pueden usar /riddlestrails <var_id>.</gray></white></green>"
+    set-usage: "<red>Usa /riddlestrails set \\<new-id>; usa letras, números, - y _. No se pueden sobrescribir los destinos existentes.</red>"
+    unknown: "<red>Destino desconocido. Usa /riddlestrails list.</red>"
+  errors:
+    admin: "<red>Solo los administradores de senderos pueden hacer eso.</red>"
+    denied: "<red>No tienes permiso para usar este comando.</red>"
+    failed: "<red>No se pudo completar la acción. Consulta la consola para ver los detalles.</red>"
+    online: "<red>El jugador debe estar conectado.</red>"
+    players-only: "Este comando debe ejecutarse dentro del juego."
+    too-many-arguments: "<red>Demasiados argumentos.</red>"
+  help:
+    admin:
+      - "<gray>/riddlestrails set \\<id> — guarda tu posición como destino</gray>"
+      - "<gray>/riddlestrails record \\<id> — recorre la ruta hasta el destino</gray>"
+      - "<gray>/riddlestrails pause | resume | save | cancel</gray>"
+      - "<gray>/riddlestrails delete \\<id> DELETE | /riddlestrails reload</gray>"
+      - "<gray>/riddlestrailslanguage reload | status</gray>"
+    user:
+      - "<aqua>Riddles Trails <gray>— /riddlestrails \\<destination>, /riddlestrails list, /riddlestrails stop</gray></aqua>"
+      - "<gray>Idioma: /riddlestrailslanguage \\<auto|locale|list></gray>"
+  language:
+    automatic: "<green>Selección automática de idioma restaurada.</green>"
+    coverage: "<gray><var_locale>: <var_count> claves usan traducciones de respaldo.</gray>"
+    failed: "<red>La recarga de idiomas falló o ya está en curso. Se conservan las traducciones activas; consulta la consola.</red>"
+    list: "<aqua>Idiomas: <white><var_locales><gray>. Actual: <var_locale></gray></white></aqua>"
+    reloaded: "<green>Se cargaron <var_count> idiomas con <var_keys> claves de mensajes.</green>"
+    reloading: "<yellow>Cargando archivos de idioma...</yellow>"
+    selected: "<green>Preferencia de idioma guardada: <var_locale>. Se comparte con los plugins que usan las preferencias de Core.</green>"
+    status: "<aqua>Servicio de idiomas: servidor=<var_locale>, revisión=<var_revision>, claves=<var_keys></aqua>"
+    unavailable: "<red>Ese idioma no está habilitado o las preferencias personales están desactivadas. Usa /rtl list.</red>"
+    usage: "<gray>/riddlestrailslanguage \\<auto|locale|list> — alias: /rtl. Administradores: reload | status.</gray>"
+  quest:
+    active: "<green>Guía de misión asignada; puede estar pausada.</green>"
+    assigned: "<green>Guía de misión asignada a <var_player>. Conectando con una ruta configurada hacia el destino.</green>"
+    cleared: "<green>Sendero de misión eliminado para <var_player></green>"
+    denied: "<red>No tienes permiso para administrar los senderos de misiones.</red>"
+    failed: "<red>No se pudo asignar este sendero. Comprueba el jugador, el mundo, el NPC y las coordenadas, y consulta la consola.</red>"
+    none: "<yellow>No hay ninguna guía de misión asignada.</yellow>"
+    notice-arrived: "<yellow>Has llegado al destino de la misión.</yellow>"
+    notice-no-connection: "<yellow>No hay una conexión transitable con ninguna ruta de misión configurada.</yellow>"
+    notice-npc-paused: "<yellow>El NPC de la misión no ha aparecido. La guía está pausada.</yellow>"
+    notice-npc-unavailable: "<yellow>El NPC de la misión no está disponible. La guía se reanudará cuando vuelva.</yellow>"
+    notice-obstructed: "<yellow>La siguiente parte de la ruta está bloqueada o no está cargada.</yellow>"
+    notice-teleport: "<yellow>Usa el ascensor o teletransporte; el sendero continúa al otro lado.</yellow>"
+    notice-world: "<yellow>El destino de la misión está en <var_world>. Viaja allí para reanudar la guía.</yellow>"
+    online: "<red>El jugador debe estar conectado; usa su nombre exacto o UUID.</red>"
+    unavailable: "<red>Los senderos de misiones no están disponibles. Esta función necesita Paper y una configuración válida; consulta el registro de inicio.</red>"
+    usage:
+      - "<yellow>/riddlesquesttrail show \\<player> npc \\<id></yellow>"
+      - "<yellow>/riddlesquesttrail show \\<player> location \\<world> \\<x> \\<y> \\<z></yellow>"
+      - "<yellow>/riddlesquesttrail \\<clear|status> \\<player></yellow>"
+  record:
+    active: "<red>Primero guarda o cancela la grabación actual.</red>"
+    cancelled: "<yellow>Grabación cancelada. Los destinos guardados no han cambiado.</yellow>"
+    limit: "<yellow>Se alcanzó el límite de puntos. Usa /riddlestrails save o /riddlestrails cancel.</yellow>"
+    move-paused: "<yellow>Grabación pausada. Vuelve cerca del último punto grabado y usa /riddlestrails resume.</yellow>"
+    none: "<red>No hay ninguna grabación activa. Usa /riddlestrails record \\<id>.</red>"
+    on-foot: "<red>Empieza a grabar a pie.</red>"
+    paused: "<yellow>Grabación pausada.</yellow>"
+    resumed: "<green>Grabación reanudada.</green>"
+    return: "<red>Vuelve a pie cerca del último punto grabado en <var_world> antes de reanudar o guardar.</red>"
+    save-limit: "<red>Se alcanzó el límite de puntos. Vuelve al último punto grabado para guardar.</red>"
+    saved:
+      plural: "count"
+      forms:
+        one: "<green>Ruta guardada: <white><var_id> <gray>(<var_count> punto)</gray></white></green>"
+        other: "<green>Ruta guardada: <white><var_id> <gray>(<var_count> puntos)</gray></white></green>"
+    started: "<green>Grabando <white><var_id><green>. Recorre la ruta y usa /riddlestrails save al llegar.</green></white></green>"
+    teleport-limit: "<yellow>Se alcanzó el límite de puntos. Vuelve al último punto grabado para guardar o usa /riddlestrails cancel.</yellow>"
+    too-short: "<red>Camina más antes de guardar, o usa /riddlestrails set para crear un punto simple.</red>"
+    usage: "<red>Usa /riddlestrails record \\<new-id>. Elige un identificador que no esté en uso.</red>"
+    world-changed: "<yellow>Grabación pausada: las rutas no pueden cruzar mundos. Vuelve a <var_world> antes de usar /riddlestrails resume.</yellow>"
+  reload:
+    busy: "<yellow>Ya hay una recarga en curso.</yellow>"
+    failed: "<red>Falló la recarga. Revisa la configuración de Riddles Trails y la consola.</red>"
+    success: "<green>Destinos y configuración recargados; senderos normales detenidos. Idiomas: /riddlestrailslanguage reload.</green>"
+  trail:
+    already-there: "<green>Ya estás en <var_id>.</green>"
+    arrived: "<green>Has llegado al destino: <white><var_id></white></green>"
+    follow: "<green>Sigue el sendero hasta <white><var_id><green>. <gray>Usa /riddlestrails stop para cancelar.</gray></green></white></green>"
+    stopped: "<yellow>Sendero detenido.</yellow>"
+    timeout: "<yellow>El sendero ha caducado. Usa /riddlestrails <var_id> para reiniciarlo.</yellow>"
+    world: "<red>Este destino está en el mundo <white><var_world><red>. Viaja allí primero.</red></white></red>"

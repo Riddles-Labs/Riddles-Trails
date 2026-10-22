@@ -1,13 +1,13 @@
 # Riddles Trails
 
-Personal particle navigation built on **RiddlesLabsCore**. Development release **1.5.0-SNAPSHOT**.
+Personal particle navigation built on **RiddlesLabsCore**. Release **1.6.1**, packaged as a native Paper plugin with Folia support.
 
-**Build target:** Java 25 / Paper API 26.2. Ordinary trails use Core's entity scheduler on Paper and Folia. The optional Citizens/BeautyQuests quest integration remains **Paper-only**. Core API 0.5.x is required; no economy plugin or database is required.
+**Build target:** Java 25 / Paper API 26.2. Ordinary trails use Core's entity scheduler on Paper and Folia. The optional Citizens/BeautyQuests quest integration remains **Paper-only**. Core API >=0.6.7,<0.7.0 is required; no economy plugin or database is required.
 
 ## Install and upgrade
 
 1. Stop the server and keep a backup of the previous plugin JAR and data folder.
-2. Remove the previous Trails JAR. Install `RiddlesLabsCore-0.5.0-SNAPSHOT.jar` and `RiddlesTrails-1.5.0-SNAPSHOT.jar` together.
+2. Remove the previous Trails JAR. Install `RiddlesLabsCore-0.6.7.jar` and `RiddlesTrails-1.6.1.jar` together.
 3. For an upgrade, copy the previous Trails data into `plugins/RiddlesTrails/`. The files remain `config.yml`, `destinations.yml`, `animations.yml` and `animation-preferences.yml`.
 4. Update permissions to `riddlestrails.*` and any fully qualified built-in animation IDs to `riddlestrails:<effect>`. Short animation IDs still work. Keep third-party animation namespaces unchanged.
 5. Start the server. Core must be enabled before Trails; Trails refuses to start without a compatible Core API.
@@ -22,13 +22,13 @@ Animation settings come from `plugins/RiddlesTrails/animations.yml`. Missing new
 
 ## Build
 
-Build in `F:/Plugins Coding/RiddlesTrails`, with Core's SDK installed from `F:/Coding/RiddlesLabCore`:
+Build in `F:/Plugins Coding/RiddlesTrails`, with Core's SDK installed from `F:/Plugins Coding/RiddlesLabCore`:
 
 ```text
 mvn -B -ntp -Dmaven.test.skip=true -DskipITs=true clean package
 ```
 
-The output is `target/RiddlesTrails-1.5.0-SNAPSHOT.jar`. Core dependencies have Maven `provided` scope and are not bundled. The owner performs all testing on their server; this project defaults to skipping tests. No tests, benchmarks or servers were run for this migration.
+The output is `target/RiddlesTrails-1.6.1.jar`. Core dependencies have Maven `provided` scope and are not bundled. The owner performs all testing on their server; this project defaults to skipping tests. No tests, benchmarks or servers were run for this migration.
 
 ## Quick waypoint
 
@@ -223,3 +223,7 @@ One quest assignment exists per player; each show call replaces it. Calls made o
 ### Build status
 
 This migration is compiled and packaged with all tests skipped. No test server, benchmark, simulation or production-server action was run. The owner performs all testing. Historical fixture sources do not establish behavior of the new Core integration.
+
+## Languages
+
+Version 1.6.0 uses Core for all 72 player-message keys, with English and Spanish catalogs. Use `/rtl list`, `/rtl es`, `/rtl auto`, `/rtl reload` and `/rtl status`. See [the owner guide](docs/LANGUAGES.md).

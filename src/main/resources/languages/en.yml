@@ -1,0 +1,100 @@
+# Editable messages. Keep keys, commands and <var_name> arguments unchanged.
+# Empty string or [] suppresses a message. Reload: /rtl reload
+# Supported styles: colors, decorations, gradients, rainbow and newline. Close style tags.
+schema-version: 1
+messages:
+  animation:
+    denied: "<red>You cannot manage trail animations.</red>"
+    failed: "<red>Cannot change this animation. Check the ID with /riddlestrailanimation list and check the console.</red>"
+    list: "<aqua>Animations: <white><var_animations></white></aqua>"
+    selected: "<green>Animation for <var_player>: <var_animation></green>"
+    usage: "<yellow>/riddlestrailanimation list | set \\<player> \\<id> | reset \\<player></yellow>"
+  destination:
+    confirm-delete: "<yellow>Confirm with /riddlestrails delete \\<id> DELETE</yellow>"
+    deleted: "<green>Deleted <var_id></green>"
+    empty: "<aqua>Destinations: <white>None yet.</white></aqua>"
+    list: "<aqua>Destinations: <white><var_destinations></white></aqua>"
+    not-found: "<red>Destination not found.</red>"
+    saved: "<green>Waypoint saved: <white><var_id><gray>. Players can use /riddlestrails <var_id></gray></white></green>"
+    set-usage: "<red>Use /riddlestrails set \\<new-id>; IDs use letters, numbers, - and _. Existing IDs cannot be overwritten.</red>"
+    unknown: "<red>Unknown destination. Use /riddlestrails list.</red>"
+  errors:
+    admin: "<red>Only trail administrators can do that.</red>"
+    denied: "<red>You do not have permission to use this command.</red>"
+    failed: "<red>Could not complete that action. Check the console for details.</red>"
+    online: "<red>Player must be online.</red>"
+    players-only: "This command must be run in game."
+    too-many-arguments: "<red>Too many arguments.</red>"
+  help:
+    admin:
+      - "<gray>/riddlestrails set \\<id> — save your position as a waypoint</gray>"
+      - "<gray>/riddlestrails record \\<id> — walk a route toward its destination</gray>"
+      - "<gray>/riddlestrails pause | resume | save | cancel</gray>"
+      - "<gray>/riddlestrails delete \\<id> DELETE | /riddlestrails reload</gray>"
+      - "<gray>/riddlestrailslanguage reload | status</gray>"
+    user:
+      - "<aqua>Riddles Trails <gray>— /riddlestrails \\<destination>, /riddlestrails list, /riddlestrails stop</gray></aqua>"
+      - "<gray>Language: /riddlestrailslanguage \\<auto|locale|list></gray>"
+  language:
+    automatic: "<green>Automatic language selection restored.</green>"
+    coverage: "<gray><var_locale>: <var_count> keys use fallback translations.</gray>"
+    failed: "<red>Language reload failed or is already running. Working translations remain active; check the console.</red>"
+    list: "<aqua>Languages: <white><var_locales><gray>. Current: <var_locale></gray></white></aqua>"
+    reloaded: "<green>Loaded <var_count> languages with <var_keys> message keys.</green>"
+    reloading: "<yellow>Loading language files...</yellow>"
+    selected: "<green>Language preference saved: <var_locale>. Shared with plugins using Core language preferences.</green>"
+    status: "<aqua>Language service: server=<var_locale>, revision=<var_revision>, keys=<var_keys></aqua>"
+    unavailable: "<red>That language is not enabled, or player language overrides are disabled. Use /rtl list.</red>"
+    usage: "<gray>/riddlestrailslanguage \\<auto|locale|list> — /rtl is an alias. Admins: reload | status.</gray>"
+  quest:
+    active: "<green>Quest guidance assigned (it may be paused).</green>"
+    assigned: "<green>Quest guidance assigned for <var_player>. Connecting to a configured route toward the destination.</green>"
+    cleared: "<green>Quest trail cleared for <var_player></green>"
+    denied: "<red>You do not have permission to manage quest trails.</red>"
+    failed: "<red>Could not assign this quest trail. Check the player, world, NPC ID and coordinates, then consult the console.</red>"
+    none: "<yellow>No quest guidance assigned.</yellow>"
+    notice-arrived: "<yellow>Quest destination reached.</yellow>"
+    notice-no-connection: "<yellow>No walkable connection to a configured quest route is currently available.</yellow>"
+    notice-npc-paused: "<yellow>The quest NPC is not spawned. Guidance is paused.</yellow>"
+    notice-npc-unavailable: "<yellow>The quest NPC is unavailable. Guidance will resume when it returns.</yellow>"
+    notice-obstructed: "<yellow>The next part of the quest route is obstructed or not loaded.</yellow>"
+    notice-teleport: "<yellow>Use the elevator or teleport here; your trail continues on the other side.</yellow>"
+    notice-world: "<yellow>Your quest destination is in <var_world>. Travel there to resume guidance.</yellow>"
+    online: "<red>Player must be online (use their exact name or UUID).</red>"
+    unavailable: "<red>Quest trails are unavailable. This extension requires Paper and valid configuration; check the startup log.</red>"
+    usage:
+      - "<yellow>/riddlesquesttrail show \\<player> npc \\<id></yellow>"
+      - "<yellow>/riddlesquesttrail show \\<player> location \\<world> \\<x> \\<y> \\<z></yellow>"
+      - "<yellow>/riddlesquesttrail \\<clear|status> \\<player></yellow>"
+  record:
+    active: "<red>Save or cancel your current recording first.</red>"
+    cancelled: "<yellow>Recording cancelled. Saved destinations are unchanged.</yellow>"
+    limit: "<yellow>Recording point limit reached. Use /riddlestrails save or /riddlestrails cancel.</yellow>"
+    move-paused: "<yellow>Recording paused. Return near the last recorded point and use /riddlestrails resume.</yellow>"
+    none: "<red>No active recording. Use /riddlestrails record \\<id>.</red>"
+    on-foot: "<red>Start recording on foot.</red>"
+    paused: "<yellow>Recording paused.</yellow>"
+    resumed: "<green>Recording resumed.</green>"
+    return: "<red>Return on foot near the last recorded point in <var_world> before resuming or saving.</red>"
+    save-limit: "<red>Point limit reached. Return to the last recorded point to save.</red>"
+    saved:
+      plural: "count"
+      forms:
+        one: "<green>Route saved: <white><var_id> <gray>(<var_count> point)</gray></white></green>"
+        other: "<green>Route saved: <white><var_id> <gray>(<var_count> points)</gray></white></green>"
+    started: "<green>Recording <white><var_id><green>. Walk the route, then /riddlestrails save at the destination.</green></white></green>"
+    teleport-limit: "<yellow>Recording point limit reached. Return to the last recorded point to save, or /riddlestrails cancel.</yellow>"
+    too-short: "<red>Walk farther before saving, or use /riddlestrails set for a simple waypoint.</red>"
+    usage: "<red>Use /riddlestrails record \\<new-id>. Choose an unused destination ID.</red>"
+    world-changed: "<yellow>Recording paused: routes cannot span worlds. Return to <var_world> before /riddlestrails resume.</yellow>"
+  reload:
+    busy: "<yellow>A reload is already running.</yellow>"
+    failed: "<red>Reload failed. Check Riddles Trails configuration and the console.</red>"
+    success: "<green>Destinations and configuration reloaded; ordinary trails stopped. Language files: /riddlestrailslanguage reload.</green>"
+  trail:
+    already-there: "<green>You are already at <var_id>.</green>"
+    arrived: "<green>Destination reached: <white><var_id></white></green>"
+    follow: "<green>Follow the trail to <white><var_id><green>. <gray>/riddlestrails stop to cancel.</gray></green></white></green>"
+    stopped: "<yellow>Trail stopped.</yellow>"
+    timeout: "<yellow>Trail timed out. Use /riddlestrails <var_id> to restart.</yellow>"
+    world: "<red>This destination is in world <white><var_world><red>. Travel there first.</red></white></red>"

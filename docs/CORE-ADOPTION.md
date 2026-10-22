@@ -2,7 +2,7 @@
 
 ## Runtime dependency and ownership
 
-Riddles Trails requires RiddlesLabsCore API >=0.6.0,<0.7.0. Its descriptor declares a hard dependency. The Maven API is provided, so there is one shared Core API at runtime. Trails registers module ID `riddlestrails` and releases its owned resources on shutdown or failed startup.
+Riddles Trails requires RiddlesLabsCore API >=0.6.5,<0.7.0. Its descriptor declares a hard dependency. The Maven API is provided, so there is one shared Core API at runtime. Trails registers module ID `riddlestrails` and releases its owned resources on shutdown or failed startup.
 
 | Shared facility | Trails use |
 |---|---|
@@ -77,3 +77,7 @@ compatible because Core also supports that family. Paper-only quest safeguards,
 route formats and preferences remain unchanged. This working copy was compiled
 and packaged with test compilation and tests skipped; runtime validation was not
 performed.
+
+## Language release 1.6.0
+
+Requires Core 0.6.5. All player-facing message paths use the shared language service. [Owner and integration guide](LANGUAGES.md). Earlier release sections describe historical builds.

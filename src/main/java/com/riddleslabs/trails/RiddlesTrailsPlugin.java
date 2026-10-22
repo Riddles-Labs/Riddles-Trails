@@ -40,6 +40,7 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
     private AnimationEngine animations;
     private volatile TrailSettings settings;
     private PaperModule module;
+    private TrailMessages messages;
     private ReloadableConfiguration<TrailConfiguration> configuration;
     private final java.util.concurrent.atomic.AtomicBoolean reloading = new java.util.concurrent.atomic.AtomicBoolean();
     private record TrailConfiguration(TrailSettings trails, QuestTrailService.Config quests) {}
@@ -55,8 +56,9 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
         try {
             PaperModule owned = core.register(this, ModuleDescriptor.builder("riddlestrails")
                     .displayName("Riddles Trails").version(getPluginMeta().getVersion())
-                    .requiredApi("0.6.0", "0.7.0").build());
+                    .requiredApi("0.6.7", "0.7.0").build());
             module = owned;
+            messages = new TrailMessages(this, owned);
             owned.own(recordings::clear);
             installDefault("config.yml");
             installDefault("animations.yml");
@@ -71,22 +73,23 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
             owned.own(animations::shutdown);
             TrailParticles.initialize(animations);
             owned.own(() -> TrailParticles.initialize(null));
-            trails = new TrailService(owned.scheduler());
+            trails = new TrailService(owned.scheduler(), messages);
             owned.own(trails::shutdown);
             owned.listeners().register(animations);
             owned.listeners().register(this);
             publish(TrailAnimationAPI.class, animations, "animations");
-            bind("riddlestrailanimation", "riddlestrails.animation.admin", new AnimationCommand(animations));
+            bind("riddlestrailanimation", "riddlestrails.animation.admin", new AnimationCommand(animations, messages));
             bind("riddlestrails", "riddlestrails.use", this);
+            bind("riddlestrailslanguage", "riddlestrails.use", messages);
             if (!isFolia()) {
                 questTrails = new QuestTrailService(this, owned.scheduler(), store, () -> settings,
-                        () -> configuration.snapshot().value().quests());
+                        () -> configuration.snapshot().value().quests(), messages);
                 owned.own(questTrails::shutdown);
                 owned.listeners().register(questTrails);
                 publish(QuestTrailAPI.class, questTrails, "quests");
                 getServer().getOnlinePlayers().forEach(questTrails::restore);
             }
-            bind("riddlesquesttrail", "riddlestrails.quest.admin", new QuestTrailCommand(questTrails));
+            bind("riddlesquesttrail", "riddlestrails.quest.admin", new QuestTrailCommand(questTrails, messages));
             owned.facilities().placeholders().register("destinations", context -> Integer.toString(store.all().size()));
             owned.facilities().placeholders().register("active", context -> Integer.toString(trails.activeCount()));
             owned.facilities().health().update("runtime", HealthStatus.HEALTHY, "READY");
@@ -99,6 +102,7 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
             owned.startupBanner(List.of("R I D D L E S   L A B S", "T R A I L S"), List.of(
                     new StartupRow("Core API", core.apiVersion().toString(), StartupTone.INFO),
                     new StartupRow("Runtime", "READY", StartupTone.READY),
+                    new StartupRow("Languages", Integer.toString(messages.localeCount()) + " (Core)", StartupTone.INFO),
                     new StartupRow("Destinations", Integer.toString(store.all().size()), StartupTone.INFO),
                     new StartupRow("Animations", Integer.toString(animations.animations().size()), StartupTone.INFO),
                     new StartupRow("Quest guidance", questTrails == null ? "Paper only" : "READY", StartupTone.INFO),
@@ -123,13 +127,34 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
     }
 
     private void bind(String name, String permission, TabExecutor executor) {
-        var command = Objects.requireNonNull(getCommand(name), name);
-        module.commands().bind(name, List.of(new CommandRoute("", permission, false, "/" + name,
+        var metadata = new org.bukkit.configuration.file.YamlConfiguration();
+        try (var reader = new java.io.InputStreamReader(
+                Objects.requireNonNull(getResource("commands.yml"), "Missing commands.yml"),
+                java.nio.charset.StandardCharsets.UTF_8)) {
+            metadata.load(reader);
+        } catch (Exception failure) {
+            throw new IllegalStateException("Cannot load bundled command metadata", failure);
+        }
+        var definition = Objects.requireNonNull(metadata.getConfigurationSection("commands." + name), name);
+        // Metadata for the existing executors; Core owns the native Paper registration.
+        var command = new Command(name, Objects.requireNonNull(definition.getString("description")),
+                Objects.requireNonNull(definition.getString("usage")), definition.getStringList("aliases")) {
+            @Override public boolean execute(CommandSender sender, String label, String[] arguments) {
+                return executor.onCommand(sender, this, label, arguments);
+            }
+        };
+        module.commands().register(new com.riddleslabs.paper.api.command.LifecycleCommand(
+                name, command.getDescription(), command.getAliases(),
+                List.of(new CommandRoute("", permission, false, command.getUsage(),
                 context -> executor.onCommand(context.sender(), command, context.label(), context.arguments().toArray(String[]::new)),
                 context -> {
                     var suggestions = executor.onTabComplete(context.sender(), command, context.label(), context.arguments().toArray(String[]::new));
                     return suggestions == null ? List.of() : suggestions;
-                })));
+                }))), (sender, reason) -> messages.send(sender, switch (reason) {
+                    case DENIED -> "errors.denied";
+                    case TOO_MANY_ARGUMENTS -> "errors.too-many-arguments";
+                    case FAILED -> "errors.failed";
+                }));
     }
 
     @Override public void onDisable() {
@@ -139,7 +164,7 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
     }
 
     private void reloadFromDisk(CommandSender sender) {
-        if (!reloading.compareAndSet(false, true)) { sender.sendMessage("§eA reload is already running."); return; }
+        if (!reloading.compareAndSet(false, true)) { messages.send(sender, "reload.busy"); return; }
         PaperModule owned = module;
         try {
             owned.facilities().work().submit(() -> {
@@ -160,8 +185,7 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
                                 if (questTrails != null) questTrails.reload();
                             } else getLogger().warning("Riddles Trails reload failed: " + failure.getClass().getSimpleName());
                             reply(owned, sender, failure == null
-                                    ? "§aDestinations and configuration reloaded; ordinary trails stopped."
-                                    : "§cReload failed. Check Riddles Trails configuration and the console.");
+                                    ? "reload.success" : "reload.failed");
                         } finally { reloading.set(false); }
                     });
                 } catch (IllegalStateException closed) { reloading.set(false); }
@@ -171,8 +195,8 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
 
     private void reply(PaperModule owned, CommandSender sender, String message) {
         if (!owned.isOpen()) return;
-        if (sender instanceof Player player) owned.scheduler().entity(player, () -> player.sendMessage(message), () -> {});
-        else sender.sendMessage(message); // Called on the global scheduler for console senders.
+        if (sender instanceof Player player) owned.scheduler().entity(player, () -> messages.send(player, message), () -> {});
+        else messages.send(sender, message); // Called on the global scheduler for console senders.
     }
 
     private static boolean isFolia() {
@@ -183,56 +207,57 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (module == null || !module.isOpen()) return true;
         if (!sender.hasPermission("riddlestrails.use") && !sender.hasPermission("riddlestrails.admin")) {
-            sender.sendMessage("§cYou do not have permission to use trails."); return true;
+            messages.send(sender, "errors.denied"); return true;
         }
         String action = args.length == 0 ? "help" : args[0].toLowerCase(Locale.ROOT);
         try {
             if (action.equals("help")) { help(sender); return true; }
             if (action.equals("list")) {
-                sender.sendMessage("§bDestinations: §f" + (store.all().isEmpty() ? "None yet." : String.join(", ", new TreeSet<>(store.all().keySet()))));
+                if (store.all().isEmpty()) messages.send(sender, "destination.empty");
+                else messages.list(sender, "destination.list", "destinations", new TreeSet<>(store.all().keySet()));
                 return true;
             }
             if (Set.of("set", "record", "pause", "resume", "save", "cancel", "delete", "reload").contains(action)
                     && !sender.hasPermission("riddlestrails.admin")) {
-                sender.sendMessage("§cOnly trail administrators can do that."); return true;
+                messages.send(sender, "errors.admin"); return true;
             }
             if (action.equals("reload")) {
                 reloadFromDisk(sender); return true;
             }
             if (action.equals("delete")) {
                 if (args.length != 3 || !args[2].equals("DELETE")) {
-                    sender.sendMessage("§eConfirm with /riddlestrails delete <id> DELETE"); return true;
+                    messages.send(sender, "destination.confirm-delete"); return true;
                 }
                 String id = args[1].toLowerCase(Locale.ROOT);
-                if (store.delete(id)) { trails.stopDestination(id); sender.sendMessage("§aDeleted " + id); }
-                else sender.sendMessage("§cDestination not found.");
+                if (store.delete(id)) { trails.stopDestination(id); messages.send(sender, "destination.deleted", "id", id); }
+                else messages.send(sender, "destination.not-found");
                 return true;
             }
-            if (!(sender instanceof Player player)) { sender.sendMessage("This command must be run in game."); return true; }
+            if (!(sender instanceof Player player)) { messages.send(sender, "errors.players-only"); return true; }
             switch (action) {
-                case "stop" -> { trails.stop(player.getUniqueId()); player.sendMessage("§eTrail stopped."); }
+                case "stop" -> { trails.stop(player.getUniqueId()); messages.send(player, "trail.stopped"); }
                 case "set" -> {
                     String id = newId(args);
-                    if (id == null) { player.sendMessage("§cUse /riddlestrails set <new-id>; IDs use letters, numbers, - and _. Existing IDs cannot be overwritten."); break; }
+                    if (id == null) { messages.send(player, "destination.set-usage"); break; }
                     saveNew(new Route(id, player.getWorld().getName(), List.of(TrailService.point(player.getLocation()))));
-                    player.sendMessage("§aWaypoint saved: §f" + id + "§7. Players can use /riddlestrails " + id);
+                    messages.send(player, "destination.saved", "id", id);
                 }
                 case "record" -> {
                     String id = newId(args);
-                    if (id == null) { player.sendMessage("§cUse /riddlestrails record <new-id>. Choose an unused destination ID."); break; }
-                    if (recordings.containsKey(player.getUniqueId())) { player.sendMessage("§cSave or cancel your current recording first."); break; }
-                    if (player.isFlying() || player.isGliding() || player.isInsideVehicle()) { player.sendMessage("§cStart recording on foot."); break; }
+                    if (id == null) { messages.send(player, "record.usage"); break; }
+                    if (recordings.containsKey(player.getUniqueId())) { messages.send(player, "record.active"); break; }
+                    if (player.isFlying() || player.isGliding() || player.isInsideVehicle()) { messages.send(player, "record.on-foot"); break; }
                     trails.stop(player.getUniqueId());
                     recordings.put(player.getUniqueId(), new Recording(id, player.getWorld().getName(), TrailService.point(player.getLocation())));
-                    player.sendMessage("§aRecording §f" + id + "§a. Walk the route, then /riddlestrails save at the destination.");
+                    messages.send(player, "record.started", "id", id);
                 }
                 case "pause" -> {
                     Recording rec = recording(player);
-                    if (rec != null) { rec.paused = true; player.sendMessage("§eRecording paused."); }
+                    if (rec != null) { rec.paused = true; messages.send(player, "record.paused"); }
                 }
                 case "resume" -> {
                     Recording rec = recording(player);
-                    if (rec != null && canContinue(player, rec)) { rec.paused = false; player.sendMessage("§aRecording resumed."); }
+                    if (rec != null && canContinue(player, rec)) { rec.paused = false; messages.send(player, "record.resumed"); }
                 }
                 case "save" -> {
                     Recording rec = recording(player);
@@ -240,23 +265,23 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
                     Route.Point end = TrailService.point(player.getLocation());
                     List<Route.Point> points = new ArrayList<>(rec.points);
                     if (points.getLast().distanceSquared(end) > .01) points.add(end);
-                    if (points.size() < 2) { player.sendMessage("§cWalk farther before saving, or use /riddlestrails set for a simple waypoint."); break; }
-                    if (points.size() > settings.maxPoints()) { player.sendMessage("§cPoint limit reached. Return to the last recorded point to save."); break; }
+                    if (points.size() < 2) { messages.send(player, "record.too-short"); break; }
+                    if (points.size() > settings.maxPoints()) { messages.send(player, "record.save-limit"); break; }
                     saveNew(new Route(rec.id, rec.world, points, rec.teleports));
                     recordings.remove(player.getUniqueId());
-                    player.sendMessage("§aRoute saved: §f" + rec.id + " §7(" + points.size() + " points)");
+                    messages.send(player, "record.saved", "id", rec.id, "count", points.size());
                 }
-                case "cancel" -> { recordings.remove(player.getUniqueId()); player.sendMessage("§eRecording cancelled. Saved destinations are unchanged."); }
+                case "cancel" -> { recordings.remove(player.getUniqueId()); messages.send(player, "record.cancelled"); }
                 default -> {
                     String id = action.equals("go") ? (args.length == 2 ? args[1].toLowerCase(Locale.ROOT) : "") : action;
                     Route destination = store.get(id);
-                    if (destination == null) player.sendMessage("§cUnknown destination. Use /riddlestrails list.");
+                    if (destination == null) messages.send(player, "destination.unknown");
                     else trails.start(player, destination, settings);
                 }
             }
         } catch (Exception ex) {
             getLogger().warning("Trail command failed: " + ex.getMessage());
-            sender.sendMessage("§cCould not complete that action. " + ex.getMessage());
+            messages.send(sender, "errors.failed");
         }
         return true;
     }
@@ -272,13 +297,13 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
     }
     private Recording recording(Player p) {
         Recording rec = recordings.get(p.getUniqueId());
-        if (rec == null) p.sendMessage("§cNo active recording. Use /riddlestrails record <id>.");
+        if (rec == null) messages.send(p, "record.none");
         return rec;
     }
     private boolean canContinue(Player p, Recording rec) {
         if (!p.getWorld().getName().equals(rec.world) || p.isFlying() || p.isGliding() || p.isInsideVehicle()
                 || rec.points.getLast().distanceSquared(TrailService.point(p.getLocation())) > settings.maxStep() * settings.maxStep()) {
-            p.sendMessage("§cReturn on foot near the last recorded point in " + rec.world + " before resuming or saving."); return false;
+            messages.send(p, "record.return", "world", rec.world); return false;
         }
         return true;
     }
@@ -291,11 +316,11 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
         if (!canContinue(p, rec) || !event.getTo().getWorld().getName().equals(rec.world)
                 || rec.points.getLast().distanceSquared(TrailService.point(event.getTo())) > settings.maxStep() * settings.maxStep()) {
             rec.paused = true;
-            p.sendMessage("§eRecording paused. Return near the last recorded point and use /riddlestrails resume.");
+            messages.send(p, "record.move-paused");
             return;
         }
         if (rec.points.size() >= settings.maxPoints()) {
-            rec.paused = true; p.sendMessage("§eRecording point limit reached. Use /riddlestrails save or /riddlestrails cancel."); return;
+            rec.paused = true; messages.send(p, "record.limit"); return;
         }
         Route.Point point = TrailService.point(event.getTo());
         if (rec.points.getLast().distanceSquared(point) >= settings.recordSpacing() * settings.recordSpacing()) rec.points.add(point);
@@ -307,8 +332,8 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
         if (rec == null || event.getTo() == null) return;
         switch (rec.teleport(event.getTo().getWorld().getName(), TrailService.point(event.getFrom()),
                 TrailService.point(event.getTo()), settings.maxPoints())) {
-            case WORLD_CHANGED -> event.getPlayer().sendMessage("§eRecording paused: routes cannot span worlds. Return to " + rec.world + " before /riddlestrails resume.");
-            case POINT_LIMIT -> event.getPlayer().sendMessage("§eRecording point limit reached. Return to the last recorded point to save, or /riddlestrails cancel.");
+            case WORLD_CHANGED -> messages.send(event.getPlayer(), "record.world-changed", "world", rec.world);
+            case POINT_LIMIT -> messages.send(event.getPlayer(), "record.teleport-limit");
             default -> { }
         }
     }
@@ -316,14 +341,10 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
     @EventHandler public void onQuit(PlayerQuitEvent event) { trails.stop(event.getPlayer().getUniqueId()); recordings.remove(event.getPlayer().getUniqueId()); }
 
     private void help(CommandSender sender) {
-        sender.sendMessage("§bRiddles Trails §7— /riddlestrails <destination>, /riddlestrails list, /riddlestrails stop");
-        if (sender.hasPermission("riddlestrails.admin")) {
-            sender.sendMessage("§7/riddlestrails set <id> — save your position as a waypoint");
-            sender.sendMessage("§7/riddlestrails record <id> — walk a route toward its destination");
-            sender.sendMessage("§7/riddlestrails pause | resume | save | cancel");
-            sender.sendMessage("§7/riddlestrails delete <id> DELETE | /riddlestrails reload");
-        }
+        messages.send(sender, "help.user");
+        if (sender.hasPermission("riddlestrails.admin")) messages.send(sender, "help.admin");
     }
+
     @Override public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (module == null || !module.isOpen()) return List.of();
         if (!sender.hasPermission("riddlestrails.use") && !sender.hasPermission("riddlestrails.admin")) return List.of();
