@@ -42,6 +42,7 @@ public final class AnimationEngine implements TrailAnimationAPI, Listener {
     private volatile AnimationConfig config;
     private final ReloadableConfiguration<AnimationConfig> configuration;
     private volatile boolean closed;
+    private final Set<String> reportedParticleFallbacks = ConcurrentHashMap.newKeySet();
 
     public AnimationEngine(JavaPlugin plugin, YamlConfigurations configurations, com.riddleslabs.api.files.FileCoordinator persistence) {
         this(plugin, configurations, persistence, null);
@@ -68,12 +69,14 @@ public final class AnimationEngine implements TrailAnimationAPI, Listener {
                 return next;
             });
             config=configuration.snapshot().value();
+            reportParticleFallbacks();
         } catch(Exception ex) { throw new IllegalArgumentException("Could not load animations.yml: "+ex.getMessage(),ex); }
     }
     public synchronized void reload() {
         open();
         try {
             config=configuration.reload().value();
+            reportParticleFallbacks();
             states.clear();
         } catch(Exception ex) { throw new IllegalArgumentException("Could not reload animations.yml: "+ex.getMessage(),ex); }
     }
@@ -82,6 +85,10 @@ public final class AnimationEngine implements TrailAnimationAPI, Listener {
         if(!id.contains(":")) id="riddlestrails:"+id;
         if(!VALID_ID.matcher(id).matches()) throw new IllegalArgumentException("Invalid animation ID: "+value);
         return id;
+    }
+    private void reportParticleFallbacks() {
+        for (String name : new TreeSet<>(ParticleTypes.fallbacks())) if (reportedParticleFallbacks.add(name))
+            plugin.getLogger().warning("Particle " + name + " needs a newer/different particle API; rendering colored dust on this server. Saved particle settings are retained.");
     }
     private void open() { if(closed) throw new IllegalStateException("Animation API is disabled"); }
     @Override public void register(Plugin owner,String name,TrailAnimation animation) {

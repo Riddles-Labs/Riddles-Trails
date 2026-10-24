@@ -13,7 +13,7 @@ final class SafeCorridor {
     static Route.Point stand(World world,Route.Point point,double rise,double drop) {return new Snapshot(world).stand(point,rise,drop);}
     static boolean clear(World world,Route.Point point) {return new Snapshot(world).clear(point);}
 
-    /** Only for one synchronous render/search. Never retain across ticks or world changes. */
+    /** Only for one entity-owned render/search. Never retain across ticks or world changes. */
     static final class Snapshot {
         private record BlockKey(int x,int y,int z) {}
         private record Bounds(double minX,double minY,double minZ,double maxX,double maxY,double maxZ) {}
@@ -24,7 +24,15 @@ final class SafeCorridor {
         Snapshot(World world) {this.world=world;minHeight=world.getMinHeight();maxHeight=world.getMaxHeight();}
         private boolean loaded(int x,int z) {
             long key=((long)(x>>4)<<32)|((z>>4)&0xffffffffL);
-            return chunks.computeIfAbsent(key,ignored->world.isChunkLoaded(x>>4,z>>4));
+            // Loaded does not imply owned on Folia. Never read a neighbouring region's blocks.
+            return chunks.computeIfAbsent(key, ignored -> {
+                int cx = x >> 4, cz = z >> 4;
+                // Collision shapes can consult neighbouring blocks, so include a chunk halo.
+                if (!com.riddleslabs.paper.api.scheduler.PlatformThreads.owns(world, cx, cz, 1)) return false;
+                for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++)
+                    if (!world.isChunkLoaded(cx + dx, cz + dz)) return false;
+                return true;
+            });
         }
         private List<Bounds> boxes(int x,int y,int z) {
             BlockKey key=new BlockKey(x,y,z);List<Bounds> cached=collisions.get(key);

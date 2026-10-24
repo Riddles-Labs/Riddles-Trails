@@ -21,7 +21,7 @@ recording:
   # Larger non-teleport movement pauses recording; actual teleports are saved as transitions.
   max-step-distance: 8.0
 
-# Optional Paper-only Citizens / BeautyQuests integration.
+# Optional Citizens / BeautyQuests integration. Use builds compatible with your server.
 # Record routes with /riddlestrails record <id>, walk the road toward the NPC, /riddlestrails save.
 # Multiple routes per NPC can cover different approaches. Nearby terrain connects players to the route.
 quest-trails:

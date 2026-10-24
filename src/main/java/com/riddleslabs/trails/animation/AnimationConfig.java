@@ -3,7 +3,6 @@ package com.riddleslabs.trails.animation;
 import com.riddleslabs.trails.api.animation.AnimationStyle;
 import java.util.*;
 import org.bukkit.Color;
-import org.bukkit.Particle;
 import org.bukkit.configuration.ConfigurationSection;
 
 record AnimationConfig(String selected, String fallback, AnimationStyle common, Map<String,AnimationStyle> profiles) {
@@ -32,7 +31,7 @@ record AnimationConfig(String selected, String fallback, AnimationStyle common, 
         Map<String,Double> parameters=new HashMap<>();
         if(defaults!=null) parameters(defaults,parameters);
         parameters(section,parameters);
-        return new AnimationStyle(com.riddleslabs.paper.api.command.argument.TypedArguments.enumeration(Particle.class).parse(Objects.toString(get.apply("particle"))),palette,
+        return new AnimationStyle(com.riddleslabs.trails.api.animation.ParticleTypes.parse(Objects.toString(get.apply("particle"))),palette,
                 number(get.apply("period-seconds")),number(get.apply("scale")),number(get.apply("width")),number(get.apply("height")),
                 number(get.apply("brightness")),number(get.apply("base-brightness")),(float)number(get.apply("size")),
                 (int)number(get.apply("duration-ticks")),parameters);

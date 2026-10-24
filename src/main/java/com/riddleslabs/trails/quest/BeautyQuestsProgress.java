@@ -9,6 +9,8 @@ final class BeautyQuestsProgress {
     private BeautyQuestsProgress() {}
 
     static Integer destination(Player player, List<Map<?, ?>> rules) throws ReflectiveOperationException {
+        if (!com.riddleslabs.paper.api.scheduler.PlatformThreads.owns(player))
+            throw new IllegalStateException("Quest progress requires the player's entity scheduler");
         Object api = OptionalPluginAccess.call(
                 OptionalPluginAccess.type("BeautyQuests", "fr.skytasul.quests.api.QuestsAPI"), "getAPI");
         Object plugin = OptionalPluginAccess.call(api, "getPlugin");

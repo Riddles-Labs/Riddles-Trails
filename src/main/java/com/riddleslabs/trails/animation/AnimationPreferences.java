@@ -7,7 +7,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 /** Durable UUID preferences. Publish changes only after their atomic file replacement succeeds. */
 final class AnimationPreferences {
-    private record Preference(String animation, AnimationStyle style) {}
+    private record Preference(String animation, AnimationStyle style, String particleName) {}
     private final com.riddleslabs.api.files.FileCoordinator persistence;
     private static final String FILE = "animation-preferences.yml";
     private volatile Map<UUID, Preference> entries = Map.of();
@@ -27,7 +27,7 @@ final class AnimationPreferences {
                 String animation = player.getString("animation");
                 ConfigurationSection style = player.getConfigurationSection("style");
                 loaded.put(UUID.fromString(key), new Preference(animation == null ? null : AnimationEngine.id(animation),
-                        style == null ? null : AnimationConfig.parse(style, null)));
+                        style == null ? null : AnimationConfig.parse(style, null), style == null ? null : style.getString("particle")));
             }
             entries = Map.copyOf(loaded);
             persistence.acceptRead(FILE);
@@ -49,12 +49,12 @@ final class AnimationPreferences {
 
     synchronized void select(UUID player, String animation) {
         Preference previous = entries.get(Objects.requireNonNull(player));
-        update(player, new Preference(animation, previous == null ? null : previous.style));
+        update(player, new Preference(animation, previous == null ? null : previous.style, previous == null ? null : previous.particleName));
     }
 
     synchronized void setStyle(UUID player, AnimationStyle style) {
         Preference previous = entries.get(Objects.requireNonNull(player));
-        update(player, new Preference(previous == null ? null : previous.animation, style));
+        update(player, new Preference(previous == null ? null : previous.animation, style, style == null ? null : style.particle().name()));
     }
 
     private void update(UUID player, Preference preference) {
@@ -68,7 +68,12 @@ final class AnimationPreferences {
         updated.forEach((uuid, value) -> {
             ConfigurationSection section = players.createSection(uuid.toString());
             section.set("animation", value.animation);
-            if (value.style != null) writeStyle(section.createSection("style"), value.style);
+            if (value.style != null) {
+                ConfigurationSection appearance = section.createSection("style");
+                writeStyle(appearance, value.style);
+                // Selecting an animation must not permanently save an older-server particle fallback.
+                appearance.set("particle", value.particleName);
+            }
         });
         persistence.write(FILE, yaml.saveToString());
         entries = Map.copyOf(updated);

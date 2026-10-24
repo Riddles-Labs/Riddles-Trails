@@ -1,19 +1,19 @@
 # Riddles Trails
 
-**1.6.4 requires Core 0.6.13.** Trails now reports 26 aggregate metrics and optional scrubbed errors through Core. Existing settings and data formats stay intact.
+**1.6.6 requires Core 0.6.18 or later within 0.6.x.** Quest guidance now uses entity-owned scheduling on Paper and Folia. Trails retains its 26 aggregate metrics and optional scrubbed errors through Core. Existing settings and data formats stay intact.
 
 See [FastStats setup and metric definitions](docs/FASTSTATS.md) for the two Trails dashboards and error-reporting switch.
 
-Personal particle navigation built on **RiddlesLabsCore**. Release **1.6.4**, packaged as a native Paper plugin with Folia support.
+Personal particle navigation built on **RiddlesLabsCore**. Release **1.6.6**, packaged as a native Paper plugin with Folia support.
 
-**Build target:** Java 25 / Paper API 26.2. Ordinary trails use Core's entity scheduler on Paper and Folia. The optional Citizens/BeautyQuests quest integration remains **Paper-only**. Core API >=0.6.13,<0.7.0 is required; no economy plugin or database is required.
+**Compatibility target:** Paper 1.20–26.2 and available Folia releases from 1.20.1–26.2. Java 21 bytecode; use Java 25 for 26.x servers. Build with JDK 25 against Paper 1.20. See [version compatibility](docs/COMPATIBILITY-1.6.6.md). Ordinary and quest trails use Core's entity scheduler on Paper and Folia. Citizens and BeautyQuests integrations require builds compatible with the running server. Core API >=0.6.18,<0.7.0 is required; no economy plugin or database is required.
 
 ## Install and upgrade
 
 1. Stop the server and keep a backup of the previous plugin JAR and data folder.
-2. Remove the previous Trails JAR. Install `RiddlesLabsCore-0.6.13.jar` and `RiddlesTrails-1.6.4.jar` together.
-3. For an upgrade, copy the previous Trails data into `plugins/RiddlesTrails/`. The files remain `config.yml`, `destinations.yml`, `animations.yml` and `animation-preferences.yml`.
-4. Update permissions to `riddlestrails.*` and any fully qualified built-in animation IDs to `riddlestrails:<effect>`. Short animation IDs still work. Keep third-party animation namespaces unchanged.
+2. Remove the previous Trails JAR. Install `RiddlesTrails-1.6.6.jar`; keep your compatible Core installation (0.6.18 or later within 0.6.x).
+3. For an existing Riddles Trails installation, retain `plugins/RiddlesTrails/` without resetting it. The files remain `config.yml`, `destinations.yml`, `animations.yml` and `animation-preferences.yml`.
+4. Keep existing `riddlestrails.*` permissions, aliases and animation IDs. Short animation IDs and third-party namespaces remain unchanged.
 5. Start the server. Core must be enabled before Trails; Trails refuses to start without a compatible Core API.
 
 On startup, the legacy root language.yml moves to languages/language.yml when the destination is absent. Existing catalogs receive short managed comments with backups; translations remain unchanged. If both policy files exist, both are kept and the root policy remains active. See [upgrade details](docs/CORE-ADOPTION.md) before replacing an installed version. Do not install the API-only JAR on the server.
@@ -31,10 +31,10 @@ See [Core 0.6.10 adaptation](docs/CORE-0.6.9-ADAPTATION.md) for asynchronous sav
 Build in `F:/Plugins Coding/RiddlesTrails`, with Core's SDK installed from `F:/Plugins Coding/RiddlesCore`:
 
 ```text
-mvn -B -ntp -Dmaven.test.skip=true -DskipITs=true clean package
+mvn -B -ntp -Dmaven.test.skip=true -DskipITs=true package
 ```
 
-The output is `target/RiddlesTrails-1.6.4.jar`. Core dependencies have Maven `provided` scope and are not bundled. The owner performs all testing on their server; this project defaults to skipping tests. No tests, benchmarks or servers were run for this migration.
+The output is `target/RiddlesTrails-1.6.6.jar`. Core dependencies have Maven `provided` scope and are not bundled. The owner performs all testing on their server; this project defaults to skipping tests. No tests, benchmarks or servers were run for this migration.
 
 ## Quick waypoint
 
@@ -110,7 +110,7 @@ Unit tests cover route joining/projection, corner following, duplicate points, i
 
 ## Quest guidance: Citizens and BeautyQuests
 
-Riddles Trails exposes private quest trails through Java and console commands. Nothing is tied to a particular server, NPC name or quest chain. Install compatible Citizens and BeautyQuests builds on Paper to use both integrations. Fixed-location guidance does not require either plugin. Existing configs can add the `quest-trails` section shown below; missing settings use defaults.
+Riddles Trails exposes private quest trails through Java and console commands. Nothing is tied to a particular server, NPC name or quest chain. Install compatible Citizens and BeautyQuests builds for Paper or Folia to use both integrations. Trails cannot make an incompatible dependency run on Folia. See [Folia quest guidance](docs/FOLIA-QUESTS.md). Fixed-location guidance does not require either plugin. Existing configs can add the `quest-trails` section shown below; missing settings use defaults.
 
 ### Configure roads first
 
@@ -131,7 +131,7 @@ quest-trails:
 
 Record every referenced route, then run `/riddlestrails reload`. These NPC IDs and route names are examples; replace them with your own. Multiple routes per NPC allow different starting areas. The nearest route entrances are tried first, preferring a complete walkable connection. Routes are directional. A single `/riddlestrails set` waypoint can also be mapped; guidance then uses the bounded local walking search to approach it.
 
-Players can receive guidance away from the recorded road. A show command/API call schedules its first render for the next server tick. A bounded walking search connects the player to a recorded section using loaded terrain, including detours around walls. The old `join-radius` setting is ignored. The route endpoint must still be within `target-radius` (0.5–8 blocks) of the destination. An NPC's live position is refreshed each render update; if it leaves that endpoint radius, configure an appropriate route or move it back.
+Players can receive guidance away from the recorded road. A show command/API call queues assignment on the player's entity scheduler and starts rendering on a subsequent entity tick. A bounded walking search connects the player to a recorded section using loaded terrain owned by the current region, including detours around walls. The old `join-radius` setting is ignored. The route endpoint must still be within `target-radius` (0.5–8 blocks) of the destination. NPC positions are sampled on the NPC's entity scheduler, with an additional refresh every 10 player ticks for long render intervals; if it leaves that endpoint radius, configure an appropriate route or move it back.
 
 Connections search up to 64 blocks at a time, with a configurable total node budget of 96–3072 across up to three candidate entrances. The default is 768. A partial connection guides toward a distant route and refreshes as the player walks. Plans are cached for up to two seconds and invalidated after a teleport, route/config change, target movement or substantial deviation. This is a local connector, not unlimited world navigation: inaccessible or unloaded terrain, large mazes, special movement and hazards may require additional recorded approaches. It never loads chunks, spawns NPCs or teleports players. The connector checks collision clearance and supporting surfaces; it is not a hazard-avoidance system.
 
@@ -222,7 +222,7 @@ boolean assigned = trails.hasTrail(player.getUniqueId());
 trails.clear(player.getUniqueId());
 ```
 
-One quest assignment exists per player; each show call replaces it. Calls made off the Paper server thread are queued, so `hasTrail` may not reflect a queued mutation immediately. Locations are copied and must contain finite coordinates and a world. Negative NPC IDs are rejected. Offline players are not assigned guidance; restore it after login. Using an API instance after plugin shutdown throws `IllegalStateException` for mutations.
+One quest assignment exists per player; each show call replaces it. Mutations are queued on the target player's entity scheduler, so `hasTrail` may not reflect a queued mutation immediately. Locations are copied and must contain finite coordinates and a world. Negative NPC IDs are rejected. Offline players are not assigned guidance; restore it after login. Using an API instance after plugin shutdown throws `IllegalStateException` for mutations.
 
 `hasTrail` means an assignment exists, including when paused for missing/despawned NPCs, another world, a missing/blocked route, death or arrival. At arrival particles stop; the assignment remains until clear/disconnect, allowing a moving NPC to be followed again. Quest guidance does not use the ordinary trail timeout. Ordinary `/riddlestrails` sessions are independent; `questtrail clear` only clears quest guidance. Already emitted particles expire naturally; most particle lifetimes are client-controlled, while `TRAIL` uses the duration in `animations.yml`.
 

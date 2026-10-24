@@ -19,8 +19,7 @@ public record AnimationStyle(Particle particle, List<Color> palette, double peri
         if (durationTicks < 1 || durationTicks > 200) throw new IllegalArgumentException("Duration must be 1-200 ticks");
         parameters = Map.copyOf(parameters);
         parameters.forEach((key,value) -> { if (!Double.isFinite(value)) throw new IllegalArgumentException("Non-finite parameter: " + key); });
-        if (particle.getDataType() != Void.class && particle != Particle.DUST
-                && particle != Particle.DUST_COLOR_TRANSITION && particle != Particle.TRAIL)
+        if (!ParticleTypes.supportsStyle(particle))
             throw new IllegalArgumentException("Default particle needs unsupported data: " + particle + "; custom emitters may provide its data explicitly");
     }
     private static void bounded(double v,double min,double max,String name) {

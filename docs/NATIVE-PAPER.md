@@ -1,6 +1,6 @@
 # Native Paper and Folia packaging
 
-Current Trails build: 1.6.2 with Core 0.6.9. The historical migration below introduced native Paper command registration.
+Current Trails build: 1.6.6 with Core 0.6.18+ (<0.7.0), API 1.20 and Java 21 bytecode. See [version compatibility](COMPATIBILITY-1.6.6.md). The historical migration below introduced native Paper command registration.
 Replace Core and each installed consumer JAR while the server is stopped. Keep
 existing configuration, language catalogs, data, rental state and pairing.
 
@@ -17,8 +17,7 @@ logic and saved financial identities are unchanged. Existing data-folder migrati
 from the prior RRM name remains in place.
 
 Trails keeps its route and preference formats. Ordinary trails retain Folia
-scheduling. Its Citizens/BeautyQuests quest integration remains Paper-only; this
-packaging change does not expand that feature's supported platforms.
+scheduling. Quest guidance supports Folia as of 1.6.5; see [ownership and integration details](FOLIA-QUESTS.md). The original packaging change alone did not expand quest support.
 
 Core 0.6.7 adds localized feedback to lifecycle command registration. Existing
 Core command APIs remain available to other consumers.

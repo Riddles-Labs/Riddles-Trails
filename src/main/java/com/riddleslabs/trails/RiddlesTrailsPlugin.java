@@ -35,7 +35,6 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
     private static final Set<String> RESERVED = Set.of("help", "list", "stop", "go", "set", "record", "pause", "resume", "save", "cancel", "delete", "reload");
     private RouteStore store;
     private com.riddleslabs.api.files.FileCoordinator persistence;
-    private boolean folia;
     private TrailService trails;
     private QuestTrailService questTrails;
     private AnimationEngine animations;
@@ -59,11 +58,10 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
         try {
             PaperModule owned = core.register(this, ModuleDescriptor.builder("riddlestrails")
                     .displayName("Riddles Trails").version(getPluginMeta().getVersion())
-                    .requiredApi("0.6.13", "0.7.0").build());
+                    .requiredApi("0.6.18", "0.7.0").build());
             module = owned;
             metrics = new TrailMetrics(owned);
             metrics.start();
-            folia = core.platform().folia();
             persistence = owned.fileCoordinator("trail-persistence",256,(path,ready) -> {
                 if (!ready) metrics.count(TrailMetrics.Counter.FILE_FAILURES);
                 if(owned.isOpen()) owned.facilities().health().update(path.startsWith("destinations") ? "routes" : "preferences",
@@ -92,19 +90,16 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
             bind("riddlestrailanimation", "riddlestrails.animation.admin", new AnimationCommand(animations, messages));
             bind("riddlestrails", "riddlestrails.use", this);
             bind("riddlestrailslanguage", "riddlestrails.use", messages);
-            if (!folia) {
-                questTrails = new QuestTrailService(this, owned.scheduler(), store, () -> settings,
-                        () -> configuration.snapshot().value().quests(), messages);
-                owned.own(questTrails::shutdown);
-                owned.listeners().register(questTrails);
-                publish(QuestTrailAPI.class, questTrails, "quests");
-                getServer().getOnlinePlayers().forEach(questTrails::restore);
-            }
+            questTrails = new QuestTrailService(this, owned.scheduler(), store, () -> settings,
+                    () -> configuration.snapshot().value().quests(), messages);
+            owned.own(questTrails::shutdown);
+            owned.listeners().register(questTrails);
+            publish(QuestTrailAPI.class, questTrails, "quests");
+            getServer().getOnlinePlayers().forEach(questTrails::restore);
             bind("riddlesquesttrail", "riddlestrails.quest.admin", new QuestTrailCommand(questTrails, messages));
             owned.facilities().placeholders().register("destinations", context -> Integer.toString(store.all().size()));
             owned.facilities().placeholders().register("active", context -> Integer.toString(trails.activeCount()));
-            owned.facilities().health().update("quests", questTrails == null ? HealthStatus.DEGRADED : HealthStatus.HEALTHY,
-                    questTrails == null ? "PAPER_ONLY" : "AVAILABLE");
+            owned.facilities().health().update("quests", HealthStatus.HEALTHY, "AVAILABLE");
             owned.facilities().health().update("runtime", HealthStatus.HEALTHY, "READY");
             metrics.ready(() -> {
                 var routes = store.all();
@@ -129,7 +124,7 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
                     new StartupRow("Languages", Integer.toString(messages.localeCount()) + " (Core)", StartupTone.INFO),
                     new StartupRow("Destinations", Integer.toString(store.all().size()), StartupTone.INFO),
                     new StartupRow("Animations", Integer.toString(animations.animations().size()), StartupTone.INFO),
-                    new StartupRow("Quest guidance", questTrails == null ? "Paper only" : "READY", StartupTone.INFO),
+                    new StartupRow("Quest guidance", "READY", StartupTone.INFO),
                     new StartupRow("FastStats", metrics.status(), StartupTone.INFO)));
         } catch (Exception | LinkageError failure) {
             if (metrics != null) metrics.failure(TrailMetrics.Counter.STARTUP_FAILURES, failure);
@@ -202,7 +197,7 @@ public final class RiddlesTrailsPlugin extends JavaPlugin implements Listener {
                 if (!owned.isOpen()) { reloading.set(false); return; }
                 try {
                     // Apply shared state even if the requesting player disconnected during file I/O.
-                    // Quest services only exist on Paper; this never accesses Folia entity/world state.
+                    // Quest cleanup dispatches player work through Core; no world reads occur here.
                     owned.scheduler().global(() -> {
                         try {
                             if (!owned.isOpen()) return;

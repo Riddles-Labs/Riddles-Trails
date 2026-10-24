@@ -3,24 +3,28 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.riddleslabs</groupId>
   <artifactId>riddlestrails</artifactId>
-  <version>1.6.4</version>
+  <version>1.6.6</version>
   <name>Riddles Trails</name>
   <properties>
-    <maven.compiler.release>25</maven.compiler.release>
+    <maven.compiler.release>21</maven.compiler.release>
+    <trails.build.directory>target</trails.build.directory>
     <maven.test.skip>true</maven.test.skip>
-    <minecraft.api.version>26.2</minecraft.api.version>
-    <paper.api.version>26.2.build.133-stable</paper.api.version>
-    <riddleslabs.core.version>0.6.13</riddleslabs.core.version>
+    <minecraft.api.version>1.20</minecraft.api.version>
+    <paper.api.group>io.papermc.paper</paper.api.group>
+    <paper.api.artifact>paper-api</paper.api.artifact>
+    <paper.api.version>1.20-R0.1-SNAPSHOT</paper.api.version>
+    <riddleslabs.core.version>0.6.18</riddleslabs.core.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <repositories><repository><id>papermc</id><url>https://repo.papermc.io/repository/maven-public/</url></repository></repositories>
   <dependencies>
     <dependency><groupId>com.riddleslabs</groupId><artifactId>riddleslabs-paper-api</artifactId><version>${riddleslabs.core.version}</version><scope>provided</scope></dependency>
-    <dependency><groupId>io.papermc.paper</groupId><artifactId>paper-api</artifactId><version>${paper.api.version}</version><scope>provided</scope></dependency>
+    <dependency><groupId>${paper.api.group}</groupId><artifactId>${paper.api.artifact}</artifactId><version>${paper.api.version}</version><scope>provided</scope></dependency>
     <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><version>5.11.4</version><scope>test</scope></dependency>
     <dependency><groupId>org.mockito</groupId><artifactId>mockito-core</artifactId><version>5.20.0</version><scope>test</scope></dependency>
   </dependencies>
   <build>
+    <directory>${project.basedir}/${trails.build.directory}</directory>
     <finalName>RiddlesTrails-${project.version}</finalName>
     <resources>
       <resource><directory>src/main/resources</directory><filtering>true</filtering><includes><include>paper-plugin.yml</include></includes></resource>

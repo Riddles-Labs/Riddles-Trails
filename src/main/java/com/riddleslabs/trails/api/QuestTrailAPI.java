@@ -5,8 +5,8 @@ import org.bukkit.Location;
 
 /**
  * Obtain through Bukkit's ServicesManager; do not construct an implementation.
- * Quest guidance currently requires Paper (the optional integrations are not enabled on Folia).
- * Mutations called off the server thread are queued. Locations are copied on submission.
+ * Quest guidance supports Paper and Folia; optional integrations need compatible server builds.
+ * Mutations are queued on the target player's entity scheduler. Locations are copied on submission.
  * One quest assignment per player; ordinary /riddlestrails navigation is independent.
  */
 public interface QuestTrailAPI {

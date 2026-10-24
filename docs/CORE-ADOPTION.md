@@ -1,25 +1,29 @@
 # Core adoption and upgrade
 
+## Current compatibility
+
+Trails 1.6.6 uses Core 0.6.18 for Paper 1.20–26.2 and Folia 1.20.1–26.2. Core now exposes chunk-and-halo ownership checks with a main-thread fallback on older Paper. See [version compatibility](COMPATIBILITY-1.6.6.md). Later release-history sections retain their original version requirements.
+
 ## Runtime dependency and ownership
 
-Riddles Trails requires RiddlesLabsCore API >=0.6.5,<0.7.0. Its descriptor declares a hard dependency. The Maven API is provided, so there is one shared Core API at runtime. Trails registers module ID `riddlestrails` and releases its owned resources on shutdown or failed startup.
+Riddles Trails requires RiddlesLabsCore API >=0.6.18,<0.7.0. Its descriptor declares a hard dependency. The Maven API is provided, so there is one shared Core API at runtime. Trails registers module ID `riddlestrails` and releases its owned resources on shutdown or failed startup.
 
 | Shared facility | Trails use |
 |---|---|
 | Module lifecycle | Startup rollback and shutdown ownership for commands, services, listeners and tasks |
-| Entity scheduler | Ordinary per-player particle trail updates |
-| Global scheduler | Paper-only quest updates and delayed quest restoration; shared reload publication |
+| Entity scheduler | Ordinary and quest updates, remote NPC snapshots and quest restoration |
+| Global scheduler | Shared reload publication |
 | Work executor | Configuration/animation/destination reload file work off gameplay threads |
 | YAML configuration | Default installation, validated immutable config snapshots and reload handles |
 | Commands and listeners | All three commands bound through Core; listener registrations owned by the module |
-| Services | Animation API and Paper quest API published to Core and Bukkit for extension plugins |
+| Services | Animation API and Paper/Folia quest API published to Core and Bukkit for extension plugins |
 | Startup banner | Riddles Trails logo and runtime/destination/animation/quest/metrics rows |
 | FastStats | Per-plugin configured context; aggregate destinations, active trails, animations and recordings |
 | Placeholders | Cached destination and active trail counts through Core's optional PlaceholderAPI bridge |
 
 Route geometry, particles, recording rules, animation registry, player preferences, quest progress and their YAML file formats remain product-owned. As of 1.6.2, commands save through Core background workers and revision-checked files. Existing synchronous animation API calls still wait for saving; asynchronous variants are available. See [the adaptation guide](CORE-0.6.9-ADAPTATION.md). Independent config files publish their own valid snapshots; a multi-file reload is not an all-files transaction.
 
-The quest extension still requires Paper because Citizens/BeautyQuests access and loaded-world collision searches use its server-thread model. Core scheduling alone does not make those integrations Folia-compatible. No economy provider is used or required by Trails.
+Since 1.6.5, quest guidance uses player/NPC entity scheduling and ownership-checked collision searches on Paper and Folia. Optional Citizens/BeautyQuests installations must themselves support the server. See [Folia quest guidance](FOLIA-QUESTS.md). No economy provider is used or required by Trails.
 
 ## Operator upgrade
 

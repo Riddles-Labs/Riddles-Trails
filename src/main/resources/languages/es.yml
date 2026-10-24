@@ -61,7 +61,7 @@ messages:
     notice-teleport: "<yellow>Usa el ascensor o teletransporte; el sendero continúa al otro lado.</yellow>"
     notice-world: "<yellow>El destino de la misión está en <var_world>. Viaja allí para reanudar la guía.</yellow>"
     online: "<red>El jugador debe estar conectado; usa su nombre exacto o UUID.</red>"
-    unavailable: "<red>Los senderos de misiones no están disponibles. Esta función necesita Paper y una configuración válida; consulta el registro de inicio.</red>"
+    unavailable: "<red>Los senderos de misiones no están disponibles. Consulta el registro de inicio y la configuración de misiones.</red>"
     usage:
       - "<yellow>/riddlesquesttrail show \\<player> npc \\<id></yellow>"
       - "<yellow>/riddlesquesttrail show \\<player> location \\<world> \\<x> \\<y> \\<z></yellow>"

@@ -23,17 +23,17 @@ final class ViewerParticleSink implements ParticleSink, AutoCloseable {
         if(remaining==0 || brightness<=0 || style.brightness()==0) return false;
         if(point==null)throw new IllegalArgumentException("Particle position is required");
         Object data;
-        if(style.particle()==Particle.DUST || style.particle()==Particle.DUST_COLOR_TRANSITION) {
+        if(style.particle()==ParticleTypes.dust() || style.particle()==Particle.DUST_COLOR_TRANSITION) {
             if(brightness!=lastBrightness || colorPosition!=lastColorPosition) {
                 Color color=style.color(colorPosition,brightness);
-                lastData=style.particle()==Particle.DUST?new Particle.DustOptions(color,style.size()):
+                lastData=style.particle()==ParticleTypes.dust()?new Particle.DustOptions(color,style.size()):
                         new Particle.DustTransition(color,style.color(Math.min(1,colorPosition+.15),brightness*.5),style.size());
                 lastBrightness=brightness;lastColorPosition=colorPosition;
             }
             data=lastData;
         }
-        else if(style.particle()==Particle.TRAIL)
-            data=new Particle.Trail(new Location(player.getWorld(),point.x(),point.y(),point.z()),style.color(colorPosition,brightness),style.durationTicks());
+        else if(ParticleTypes.isTrail(style.particle()))
+            data=ParticleTypes.trail(new Location(player.getWorld(),point.x(),point.y(),point.z()),style.color(colorPosition,brightness),style.durationTicks());
         else {
             // Non-colorable particles approximate brightness through deterministic emission density.
             long bits=Double.doubleToLongBits(point.x())^Long.rotateLeft(Double.doubleToLongBits(point.z()),23)^frameSeed;

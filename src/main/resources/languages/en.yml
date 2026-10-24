@@ -61,7 +61,7 @@ messages:
     notice-teleport: "<yellow>Use the elevator or teleport here; your trail continues on the other side.</yellow>"
     notice-world: "<yellow>Your quest destination is in <var_world>. Travel there to resume guidance.</yellow>"
     online: "<red>Player must be online (use their exact name or UUID).</red>"
-    unavailable: "<red>Quest trails are unavailable. This extension requires Paper and valid configuration; check the startup log.</red>"
+    unavailable: "<red>Quest trails are unavailable. Check the startup log and quest configuration.</red>"
     usage:
       - "<yellow>/riddlesquesttrail show \\<player> npc \\<id></yellow>"
       - "<yellow>/riddlesquesttrail show \\<player> location \\<world> \\<x> \\<y> \\<z></yellow>"
