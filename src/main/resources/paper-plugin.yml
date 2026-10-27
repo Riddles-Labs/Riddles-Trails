@@ -1,4 +1,5 @@
 name: RiddlesTrails
+loader: com.riddleslabs.trails.bootstrap.DependencyGuideLoader
 main: com.riddleslabs.trails.RiddlesTrailsPlugin
 version: ${project.version}
 description: Personal particle trails to saved waypoints and recorded routes.
@@ -46,3 +47,5 @@ permissions:
       riddlestrails.admin: true
       riddlestrails.quest.admin: true
       riddlestrails.animation.admin: true
+
+website: https://riddleslabs.com
